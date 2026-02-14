@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
 import * as XLSX from "xlsx";
+import { extractPdfText, extractFieldsFromText } from "./pdfParser.js";
 
 // ─── SECTOR DEFINITIONS ───
 const SECTORS = [
@@ -430,6 +431,8 @@ export default function ValuationApp() {
   const [result, setResult] = useState(null);
   const [uploadedData, setUploadedData] = useState(null);
   const [uploadFileName, setUploadFileName] = useState("");
+  const [pdfData, setPdfData] = useState(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [history, setHistory] = useState([]);
   const [activeTab, setActiveTab] = useState("calc");
   const [showMethodology, setShowMethodology] = useState(false);
@@ -443,6 +446,7 @@ export default function ValuationApp() {
     setResult(null);
     setUploadedData(null);
     setUploadFileName("");
+    setPdfData(null);
   };
 
   const handleInputChange = (key, value) => {
@@ -453,16 +457,46 @@ export default function ValuationApp() {
     const file = e.target.files[0];
     if (!file) return;
     setUploadFileName(file.name);
+    setPdfData(null);
     try {
       if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls") || file.name.endsWith(".csv")) {
         const sheets = await parseExcelFile(file);
         setUploadedData(sheets);
+      } else if (file.name.toLowerCase().endsWith(".pdf")) {
+        setPdfLoading(true);
+        setUploadedData(null);
+        const arrayBuffer = await file.arrayBuffer();
+        const { pages, fullText, numPages } = await extractPdfText(arrayBuffer);
+        const extracted = selectedSector
+          ? extractFieldsFromText(fullText, selectedSector)
+          : { extractedFields: {}, confidence: {} };
+        setPdfData({ pages, fullText, numPages, ...extracted });
+        setUploadedData({ info: `PDF processado: ${numPages} p\u00E1gina(s). ${Object.keys(extracted.extractedFields).length} campo(s) detectado(s).` });
+        setPdfLoading(false);
       } else {
-        setUploadedData({ info: "Arquivo carregado: " + file.name + ". Para extra\u00E7\u00E3o autom\u00E1tica, use .xlsx ou .csv." });
+        setUploadedData({ info: "Arquivo carregado: " + file.name + ". Para extra\u00E7\u00E3o autom\u00E1tica, use .xlsx, .csv ou .pdf." });
       }
     } catch (err) {
+      setPdfLoading(false);
       setUploadedData({ error: "Erro ao processar arquivo: " + err.message });
     }
+  };
+
+  const handleApplyPdfFields = () => {
+    if (!pdfData?.extractedFields) return;
+    setInputs((prev) => {
+      const merged = { ...prev };
+      for (const [key, value] of Object.entries(pdfData.extractedFields)) {
+        if (!merged[key] || merged[key] === "") {
+          merged[key] = String(value);
+        }
+      }
+      return merged;
+    });
+  };
+
+  const handleApplySingleField = (key, value) => {
+    setInputs((prev) => ({ ...prev, [key]: String(value) }));
   };
 
   const handleCalculate = () => {
@@ -634,7 +668,7 @@ export default function ValuationApp() {
                     <label style={{ cursor: "pointer", display: "block" }}>
                       <input type="file" accept=".xlsx,.xls,.csv,.pdf" onChange={handleFileUpload} style={{ display: "none" }} />
                       <div style={{ fontSize: 12, color: colors.textMuted }}>
-                        {uploadFileName ? uploadFileName : "Upload relat\u00F3rio trimestral (.xlsx, .csv)"}
+                        {pdfLoading ? "Processando PDF..." : uploadFileName ? uploadFileName : "Upload relat\u00F3rio trimestral (.xlsx, .csv, .pdf)"}
                       </div>
                     </label>
                     {uploadedData && !uploadedData.error && (
@@ -647,7 +681,54 @@ export default function ValuationApp() {
                     )}
                   </div>
 
-                  {/* Uploaded Data Preview */}
+                  {/* PDF Extracted Fields */}
+                  {pdfData && pdfData.extractedFields && Object.keys(pdfData.extractedFields).length > 0 && (
+                    <div style={{ marginTop: 12, borderRadius: 8, border: `1px solid ${colors.accent}44`, background: colors.surfaceAlt, overflow: "hidden" }}>
+                      <div style={{ padding: "8px 12px", background: colors.accentDim, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: colors.accent }}>Campos detectados no PDF</span>
+                        <button onClick={handleApplyPdfFields} style={{ padding: "4px 10px", borderRadius: 4, border: `1px solid ${colors.accent}`, background: colors.accent + "22", color: colors.accent, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                          Preencher todos
+                        </button>
+                      </div>
+                      <div style={{ padding: 8 }}>
+                        {Object.entries(pdfData.extractedFields).map(([key, value]) => {
+                          const fieldDef = SECTOR_FIELDS[selectedSector]?.find((f) => f.key === key);
+                          const label = fieldDef ? fieldDef.label : key;
+                          const alreadyFilled = inputs[key] && inputs[key] !== "";
+                          return (
+                            <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", borderBottom: `1px solid ${colors.border}`, fontSize: 11 }}>
+                              <span style={{ color: colors.textMuted }}>{label}</span>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <span style={{ fontWeight: 600, fontFamily: "'JetBrains Mono', monospace", color: colors.text }}>{value}</span>
+                                <button onClick={() => handleApplySingleField(key, value)} style={{ padding: "2px 6px", borderRadius: 3, border: `1px solid ${alreadyFilled ? colors.warning : colors.accent}`, background: "transparent", color: alreadyFilled ? colors.warning : colors.accent, fontSize: 10, cursor: "pointer" }}>
+                                  {alreadyFilled ? "Substituir" : "Usar"}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* PDF Text Preview */}
+                  {pdfData && pdfData.pages && (
+                    <div style={{ marginTop: 12, maxHeight: 180, overflow: "auto", borderRadius: 8, border: `1px solid ${colors.border}` }}>
+                      <div style={{ padding: "6px 10px", background: colors.surfaceAlt, fontSize: 11, fontWeight: 600, color: colors.purple, position: "sticky", top: 0, zIndex: 1, borderBottom: `1px solid ${colors.border}` }}>
+                        Texto extra\u00EDdo ({pdfData.numPages} p\u00E1gina{pdfData.numPages > 1 ? "s" : ""})
+                      </div>
+                      {pdfData.pages.map((pg) => (
+                        <div key={pg.pageNum} style={{ padding: "6px 10px", borderBottom: `1px solid ${colors.border}` }}>
+                          <div style={{ fontSize: 10, color: colors.textDim, marginBottom: 2 }}>P\u00E1gina {pg.pageNum}</div>
+                          <div style={{ fontSize: 10, color: colors.text, fontFamily: "'JetBrains Mono', monospace", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.5 }}>
+                            {pg.text.length > 800 ? pg.text.slice(0, 800) + "..." : pg.text}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Uploaded Data Preview (Excel/CSV) */}
                   {uploadedData && typeof uploadedData === "object" && !uploadedData.error && !uploadedData.info && (
                     <div style={{ marginTop: 12, maxHeight: 200, overflow: "auto", borderRadius: 8, border: `1px solid ${colors.border}` }}>
                       {Object.entries(uploadedData).map(([sheetName, rows]) => (
