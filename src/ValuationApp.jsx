@@ -5,17 +5,17 @@ import { extractPdfText, extractFieldsFromText } from "./pdfParser.js";
 
 // ─── SECTOR DEFINITIONS ───
 const SECTORS = [
-  { id: "bancos", label: "Bancos", icon: "\u{1F3E6}", type: "acao" },
-  { id: "transmissoras", label: "Transmissoras", icon: "\u26A1", type: "acao" },
-  { id: "geradoras", label: "Geradoras", icon: "\u{1F4A1}", type: "acao" },
-  { id: "seguros", label: "Seguros", icon: "\u{1F6E1}\uFE0F", type: "acao" },
-  { id: "saneamento", label: "Saneamento", icon: "\u{1F6B0}", type: "acao" },
-  { id: "holdings", label: "Holdings", icon: "\u{1F3E2}", type: "acao" },
-  { id: "telecom", label: "Telecomunica\u00E7\u00F5es", icon: "\u{1F4E1}", type: "acao" },
-  { id: "fii_logistico", label: "FIIs Log\u00EDsticos", icon: "\u{1F69B}", type: "fii" },
-  { id: "fii_shopping", label: "FIIs Shoppings", icon: "\u{1F6CD}\uFE0F", type: "fii" },
-  { id: "fii_lajes", label: "FIIs Lajes", icon: "\u{1F3D7}\uFE0F", type: "fii" },
-  { id: "fii_papel", label: "FIIs Papel", icon: "\u{1F4C4}", type: "fii" },
+  { id: "bancos", label: "Bancos", icon: "🏦", type: "acao" },
+  { id: "transmissoras", label: "Transmissoras", icon: "⚡", type: "acao" },
+  { id: "geradoras", label: "Geradoras", icon: "💡", type: "acao" },
+  { id: "seguros", label: "Seguros", icon: "🛡️", type: "acao" },
+  { id: "saneamento", label: "Saneamento", icon: "🚰", type: "acao" },
+  { id: "holdings", label: "Holdings", icon: "🏢", type: "acao" },
+  { id: "telecom", label: "Telecomunicações", icon: "📡", type: "acao" },
+  { id: "fii_logistico", label: "FIIs Logísticos", icon: "🚛", type: "fii" },
+  { id: "fii_shopping", label: "FIIs Shoppings", icon: "🛍️", type: "fii" },
+  { id: "fii_lajes", label: "FIIs Lajes", icon: "🏗️", type: "fii" },
+  { id: "fii_papel", label: "FIIs Papel", icon: "📄", type: "fii" },
 ];
 
 const DEFAULT_MARGINS = {
@@ -33,68 +33,68 @@ const DEFAULT_MARGINS = {
 };
 
 const MARGIN_RATIONALE = {
-  bancos: "Risco de cr\u00E9dito c\u00EDclico, inadimpl\u00EAncia pode saltar",
-  transmissoras: "Fluxo previs\u00EDvel (RAP), risco regulat\u00F3rio baixo",
-  geradoras: "Risco hidrol\u00F3gico, exposi\u00E7\u00E3o ao spot, GSF",
-  seguros: "Provis\u00F5es t\u00E9cnicas complexas, risco de cauda",
-  saneamento: "Risco pol\u00EDtico/regulat\u00F3rio, capex de universaliza\u00E7\u00E3o",
-  holdings: "Desconto de holding j\u00E1 embutido; margem adicional por governan\u00E7a",
-  telecom: "Ciclo tecnol\u00F3gico, capex pesado (5G/fibra)",
+  bancos: "Risco de crédito cíclico, inadimplência pode saltar",
+  transmissoras: "Fluxo previsível (RAP), risco regulatório baixo",
+  geradoras: "Risco hidrológico, exposição ao spot, GSF",
+  seguros: "Provisões técnicas complexas, risco de cauda",
+  saneamento: "Risco político/regulatório, capex de universalização",
+  holdings: "Desconto de holding já embutido; margem adicional por governança",
+  telecom: "Ciclo tecnológico, capex pesado (5G/fibra)",
   fii_logistico: "Contratos longos, demanda estrutural e-commerce",
-  fii_shopping: "Sensibilidade ao ciclo econ\u00F4mico e varejo",
-  fii_lajes: "Vac\u00E2ncia estrutural, home office, ciclo imobili\u00E1rio",
-  fii_papel: "Risco de cr\u00E9dito, sensibilidade a juros e infla\u00E7\u00E3o",
+  fii_shopping: "Sensibilidade ao ciclo econômico e varejo",
+  fii_lajes: "Vacância estrutural, home office, ciclo imobiliário",
+  fii_papel: "Risco de crédito, sensibilidade a juros e inflação",
 };
 
 const SECTOR_METHODOLOGY = {
-  bancos: { name: "Excess Return / Gordon P/B", formula: "P/B = (ROE \u2212 g) / (Ke \u2212 g)" },
-  transmissoras: { name: "DCF Regulat\u00F3rio (FCFE)", formula: "\u03A3 (RAP \u2212 OPEX \u2212 Capex) / (1+Ke)^t" },
-  geradoras: { name: "EV/EBITDA + EV/MW", formula: "Fair EV = EBITDA \u00D7 m\u00FAltiplo justo" },
-  seguros: { name: "Embedded Value Simplif. + P/B", formula: "P/B = (ROE \u2212 g) / (Ke \u2212 g)" },
-  saneamento: { name: "DCF Regulat\u00F3rio (RAB)", formula: "EV/RAB target \u00D7 RAB" },
-  holdings: { name: "Sum-of-the-Parts (SOTP)", formula: "NAV = \u03A3 Participa\u00E7\u00F5es \u2212 D\u00EDvida" },
-  telecom: { name: "DCF (FCFF) / EV/EBITDA", formula: "Fair EV = EBITDA \u00D7 m\u00FAltiplo justo" },
-  fii_logistico: { name: "NAV (Cap Rate)", formula: "NAV = (NOI / Cap Rate) \u2212 D\u00EDvida" },
-  fii_shopping: { name: "NAV (Cap Rate) + NOI/ABL", formula: "NAV = (NOI / Cap Rate) \u2212 D\u00EDvida" },
-  fii_lajes: { name: "NAV Ajustado por Vac\u00E2ncia", formula: "NAV = (NOI\u00D7(1\u2212vac_norm) / Cap Rate) \u2212 D\u00EDvida" },
-  fii_papel: { name: "An\u00E1lise de Cr\u00E9dito / P/VP", formula: "VP justo \u2248 VP \u00D7 (spread_adj / risco)" },
+  bancos: { name: "Excess Return / Gordon P/B", formula: "P/B = (ROE − g) / (Ke − g)" },
+  transmissoras: { name: "DCF Regulatório (FCFE)", formula: "Σ (RAP − OPEX − Capex) / (1+Ke)^t" },
+  geradoras: { name: "EV/EBITDA + EV/MW", formula: "Fair EV = EBITDA × múltiplo justo" },
+  seguros: { name: "Embedded Value Simplif. + P/B", formula: "P/B = (ROE − g) / (Ke − g)" },
+  saneamento: { name: "DCF Regulatório (RAB)", formula: "EV/RAB target × RAB" },
+  holdings: { name: "Sum-of-the-Parts (SOTP)", formula: "NAV = Σ Participações − Dívida" },
+  telecom: { name: "DCF (FCFF) / EV/EBITDA", formula: "Fair EV = EBITDA × múltiplo justo" },
+  fii_logistico: { name: "NAV (Cap Rate)", formula: "NAV = (NOI / Cap Rate) − Dívida" },
+  fii_shopping: { name: "NAV (Cap Rate) + NOI/ABL", formula: "NAV = (NOI / Cap Rate) − Dívida" },
+  fii_lajes: { name: "NAV Ajustado por Vacância", formula: "NAV = (NOI×(1−vac_norm) / Cap Rate) − Dívida" },
+  fii_papel: { name: "Análise de Crédito / P/VP", formula: "VP justo ≈ VP × (spread_adj / risco)" },
 };
 
 // ─── INPUT FIELD DEFINITIONS PER SECTOR ───
 const SECTOR_FIELDS = {
   bancos: [
     { key: "ticker", label: "Ticker", type: "text", placeholder: "Ex: ITUB4" },
-    { key: "currentPrice", label: "Pre\u00E7o Atual (R$)", type: "number", step: "0.01" },
-    { key: "bookValuePerShare", label: "VPA - Valor Patrimonial/A\u00E7\u00E3o (R$)", type: "number", step: "0.01" },
+    { key: "currentPrice", label: "Preço Atual (R$)", type: "number", step: "0.01" },
+    { key: "bookValuePerShare", label: "VPA - Valor Patrimonial/Ação (R$)", type: "number", step: "0.01" },
     { key: "roe", label: "ROE Recorrente (%)", type: "number", step: "0.1", hint: "Ex: 20 para 20%" },
     { key: "ke", label: "Custo de Equity - Ke (%)", type: "number", step: "0.1", hint: "Ex: 14 para 14%" },
-    { key: "g", label: "Crescimento Sustent\u00E1vel - g (%)", type: "number", step: "0.1", hint: "Ex: 5 para 5%" },
-    { key: "earningsPerShare", label: "LPA - Lucro por A\u00E7\u00E3o (R$)", type: "number", step: "0.01" },
+    { key: "g", label: "Crescimento Sustentável - g (%)", type: "number", step: "0.1", hint: "Ex: 5 para 5%" },
+    { key: "earningsPerShare", label: "LPA - Lucro por Ação (R$)", type: "number", step: "0.01" },
   ],
   transmissoras: [
     { key: "ticker", label: "Ticker", type: "text", placeholder: "Ex: TAEE11" },
-    { key: "currentPrice", label: "Pre\u00E7o Atual (R$)", type: "number", step: "0.01" },
-    { key: "rapAnual", label: "RAP Anual (R$ milh\u00F5es)", type: "number", step: "1" },
-    { key: "opex", label: "OPEX Anual (R$ milh\u00F5es)", type: "number", step: "1" },
-    { key: "capex", label: "Capex Manuten\u00E7\u00E3o Anual (R$ milh\u00F5es)", type: "number", step: "1" },
+    { key: "currentPrice", label: "Preço Atual (R$)", type: "number", step: "0.01" },
+    { key: "rapAnual", label: "RAP Anual (R$ milhões)", type: "number", step: "1" },
+    { key: "opex", label: "OPEX Anual (R$ milhões)", type: "number", step: "1" },
+    { key: "capex", label: "Capex Manutenção Anual (R$ milhões)", type: "number", step: "1" },
     { key: "ke", label: "Custo de Equity - Ke (%)", type: "number", step: "0.1" },
     { key: "g", label: "Crescimento da RAP (%)", type: "number", step: "0.1" },
     { key: "payout", label: "Payout (%)", type: "number", step: "1" },
-    { key: "sharesOutstanding", label: "A\u00E7\u00F5es em Circula\u00E7\u00E3o (milh\u00F5es)", type: "number", step: "0.1" },
-    { key: "concessionYears", label: "Anos Restantes Concess\u00E3o", type: "number", step: "1" },
+    { key: "sharesOutstanding", label: "Ações em Circulação (milhões)", type: "number", step: "0.1" },
+    { key: "concessionYears", label: "Anos Restantes Concessão", type: "number", step: "1" },
   ],
   geradoras: [
     { key: "ticker", label: "Ticker", type: "text", placeholder: "Ex: EGIE3" },
-    { key: "currentPrice", label: "Pre\u00E7o Atual (R$)", type: "number", step: "0.01" },
-    { key: "ebitda", label: "EBITDA (R$ milh\u00F5es)", type: "number", step: "1" },
-    { key: "netDebt", label: "D\u00EDvida L\u00EDquida (R$ milh\u00F5es)", type: "number", step: "1" },
+    { key: "currentPrice", label: "Preço Atual (R$)", type: "number", step: "0.01" },
+    { key: "ebitda", label: "EBITDA (R$ milhões)", type: "number", step: "1" },
+    { key: "netDebt", label: "Dívida Líquida (R$ milhões)", type: "number", step: "1" },
     { key: "mwInstalled", label: "MW Instalado", type: "number", step: "1" },
-    { key: "sharesOutstanding", label: "A\u00E7\u00F5es em Circula\u00E7\u00E3o (milh\u00F5es)", type: "number", step: "0.1" },
-    { key: "evEbitdaTarget", label: "EV/EBITDA Alvo (m\u00FAltiplo)", type: "number", step: "0.1", hint: "Geradoras: 6-9x" },
+    { key: "sharesOutstanding", label: "Ações em Circulação (milhões)", type: "number", step: "0.1" },
+    { key: "evEbitdaTarget", label: "EV/EBITDA Alvo (múltiplo)", type: "number", step: "0.1", hint: "Geradoras: 6-9x" },
   ],
   seguros: [
     { key: "ticker", label: "Ticker", type: "text", placeholder: "Ex: BBSE3" },
-    { key: "currentPrice", label: "Pre\u00E7o Atual (R$)", type: "number", step: "0.01" },
+    { key: "currentPrice", label: "Preço Atual (R$)", type: "number", step: "0.01" },
     { key: "bookValuePerShare", label: "VPA (R$)", type: "number", step: "0.01" },
     { key: "roe", label: "ROE Recorrente (%)", type: "number", step: "0.1" },
     { key: "ke", label: "Custo de Equity - Ke (%)", type: "number", step: "0.1" },
@@ -103,68 +103,68 @@ const SECTOR_FIELDS = {
   ],
   saneamento: [
     { key: "ticker", label: "Ticker", type: "text", placeholder: "Ex: SAPR11" },
-    { key: "currentPrice", label: "Pre\u00E7o Atual (R$)", type: "number", step: "0.01" },
-    { key: "rab", label: "RAB (R$ milh\u00F5es)", type: "number", step: "1" },
-    { key: "ebitda", label: "EBITDA (R$ milh\u00F5es)", type: "number", step: "1" },
-    { key: "netDebt", label: "D\u00EDvida L\u00EDquida (R$ milh\u00F5es)", type: "number", step: "1" },
-    { key: "sharesOutstanding", label: "A\u00E7\u00F5es em Circula\u00E7\u00E3o (milh\u00F5es)", type: "number", step: "0.1" },
-    { key: "evRabTarget", label: "EV/RAB Alvo", type: "number", step: "0.1", hint: "Refer\u00EAncia: 1.0-1.5x" },
+    { key: "currentPrice", label: "Preço Atual (R$)", type: "number", step: "0.01" },
+    { key: "rab", label: "RAB (R$ milhões)", type: "number", step: "1" },
+    { key: "ebitda", label: "EBITDA (R$ milhões)", type: "number", step: "1" },
+    { key: "netDebt", label: "Dívida Líquida (R$ milhões)", type: "number", step: "1" },
+    { key: "sharesOutstanding", label: "Ações em Circulação (milhões)", type: "number", step: "0.1" },
+    { key: "evRabTarget", label: "EV/RAB Alvo", type: "number", step: "0.1", hint: "Referência: 1.0-1.5x" },
   ],
   holdings: [
     { key: "ticker", label: "Ticker", type: "text", placeholder: "Ex: ITSA4" },
-    { key: "currentPrice", label: "Pre\u00E7o Atual (R$)", type: "number", step: "0.01" },
-    { key: "totalInvestments", label: "Valor Total Participa\u00E7\u00F5es (R$ milh\u00F5es)", type: "number", step: "1" },
-    { key: "holdingDebt", label: "D\u00EDvida L\u00EDquida da Holding (R$ milh\u00F5es)", type: "number", step: "1" },
-    { key: "sharesOutstanding", label: "A\u00E7\u00F5es em Circula\u00E7\u00E3o (milh\u00F5es)", type: "number", step: "0.1" },
-    { key: "holdingDiscount", label: "Desconto de Holding (%)", type: "number", step: "1", hint: "T\u00EDpico Brasil: 15-30%" },
+    { key: "currentPrice", label: "Preço Atual (R$)", type: "number", step: "0.01" },
+    { key: "totalInvestments", label: "Valor Total Participações (R$ milhões)", type: "number", step: "1" },
+    { key: "holdingDebt", label: "Dívida Líquida da Holding (R$ milhões)", type: "number", step: "1" },
+    { key: "sharesOutstanding", label: "Ações em Circulação (milhões)", type: "number", step: "0.1" },
+    { key: "holdingDiscount", label: "Desconto de Holding (%)", type: "number", step: "1", hint: "Típico Brasil: 15-30%" },
   ],
   telecom: [
     { key: "ticker", label: "Ticker", type: "text", placeholder: "Ex: VIVT3" },
-    { key: "currentPrice", label: "Pre\u00E7o Atual (R$)", type: "number", step: "0.01" },
-    { key: "ebitda", label: "EBITDA (R$ milh\u00F5es)", type: "number", step: "1" },
-    { key: "netDebt", label: "D\u00EDvida L\u00EDquida (R$ milh\u00F5es)", type: "number", step: "1" },
-    { key: "sharesOutstanding", label: "A\u00E7\u00F5es em Circula\u00E7\u00E3o (milh\u00F5es)", type: "number", step: "0.1" },
-    { key: "evEbitdaTarget", label: "EV/EBITDA Alvo (m\u00FAltiplo)", type: "number", step: "0.1", hint: "Telecom: 5-7x" },
+    { key: "currentPrice", label: "Preço Atual (R$)", type: "number", step: "0.01" },
+    { key: "ebitda", label: "EBITDA (R$ milhões)", type: "number", step: "1" },
+    { key: "netDebt", label: "Dívida Líquida (R$ milhões)", type: "number", step: "1" },
+    { key: "sharesOutstanding", label: "Ações em Circulação (milhões)", type: "number", step: "0.1" },
+    { key: "evEbitdaTarget", label: "EV/EBITDA Alvo (múltiplo)", type: "number", step: "0.1", hint: "Telecom: 5-7x" },
   ],
   fii_logistico: [
     { key: "ticker", label: "Ticker", type: "text", placeholder: "Ex: HGLG11" },
-    { key: "currentPrice", label: "Pre\u00E7o Atual (R$)", type: "number", step: "0.01" },
-    { key: "noiAnual", label: "NOI Anual (R$ milh\u00F5es)", type: "number", step: "0.1" },
-    { key: "capRate", label: "Cap Rate de Mercado (%)", type: "number", step: "0.1", hint: "Log\u00EDstico: 7-9%" },
-    { key: "totalDebt", label: "D\u00EDvida Total (R$ milh\u00F5es)", type: "number", step: "0.1" },
-    { key: "totalShares", label: "Total de Cotas (milh\u00F5es)", type: "number", step: "0.1" },
+    { key: "currentPrice", label: "Preço Atual (R$)", type: "number", step: "0.01" },
+    { key: "noiAnual", label: "NOI Anual (R$ milhões)", type: "number", step: "0.1" },
+    { key: "capRate", label: "Cap Rate de Mercado (%)", type: "number", step: "0.1", hint: "Logístico: 7-9%" },
+    { key: "totalDebt", label: "Dívida Total (R$ milhões)", type: "number", step: "0.1" },
+    { key: "totalShares", label: "Total de Cotas (milhões)", type: "number", step: "0.1" },
     { key: "vpPerShare", label: "VP por Cota (R$)", type: "number", step: "0.01" },
   ],
   fii_shopping: [
     { key: "ticker", label: "Ticker", type: "text", placeholder: "Ex: VISC11" },
-    { key: "currentPrice", label: "Pre\u00E7o Atual (R$)", type: "number", step: "0.01" },
-    { key: "noiAnual", label: "NOI Anual (R$ milh\u00F5es)", type: "number", step: "0.1" },
+    { key: "currentPrice", label: "Preço Atual (R$)", type: "number", step: "0.01" },
+    { key: "noiAnual", label: "NOI Anual (R$ milhões)", type: "number", step: "0.1" },
     { key: "capRate", label: "Cap Rate de Mercado (%)", type: "number", step: "0.1", hint: "Shoppings: 7-10%" },
-    { key: "totalDebt", label: "D\u00EDvida Total (R$ milh\u00F5es)", type: "number", step: "0.1" },
-    { key: "totalShares", label: "Total de Cotas (milh\u00F5es)", type: "number", step: "0.1" },
+    { key: "totalDebt", label: "Dívida Total (R$ milhões)", type: "number", step: "0.1" },
+    { key: "totalShares", label: "Total de Cotas (milhões)", type: "number", step: "0.1" },
     { key: "vpPerShare", label: "VP por Cota (R$)", type: "number", step: "0.01" },
-    { key: "vendasM2", label: "Vendas/m\u00B2 (R$/m\u00EAs)", type: "number", step: "1" },
-    { key: "ablTotal", label: "ABL Total (m\u00B2)", type: "number", step: "1" },
+    { key: "vendasM2", label: "Vendas/m² (R$/mês)", type: "number", step: "1" },
+    { key: "ablTotal", label: "ABL Total (m²)", type: "number", step: "1" },
   ],
   fii_lajes: [
     { key: "ticker", label: "Ticker", type: "text", placeholder: "Ex: BRCR11" },
-    { key: "currentPrice", label: "Pre\u00E7o Atual (R$)", type: "number", step: "0.01" },
-    { key: "noiAnual", label: "NOI Anual (R$ milh\u00F5es)", type: "number", step: "0.1" },
+    { key: "currentPrice", label: "Preço Atual (R$)", type: "number", step: "0.01" },
+    { key: "noiAnual", label: "NOI Anual (R$ milhões)", type: "number", step: "0.1" },
     { key: "capRate", label: "Cap Rate de Mercado (%)", type: "number", step: "0.1", hint: "Lajes: 8-11%" },
-    { key: "vacancyActual", label: "Vac\u00E2ncia Atual (%)", type: "number", step: "0.1" },
-    { key: "vacancyNormalized", label: "Vac\u00E2ncia Normalizada (%)", type: "number", step: "0.1", hint: "M\u00E9dia hist\u00F3rica da regi\u00E3o" },
-    { key: "totalDebt", label: "D\u00EDvida Total (R$ milh\u00F5es)", type: "number", step: "0.1" },
-    { key: "totalShares", label: "Total de Cotas (milh\u00F5es)", type: "number", step: "0.1" },
+    { key: "vacancyActual", label: "Vacância Atual (%)", type: "number", step: "0.1" },
+    { key: "vacancyNormalized", label: "Vacância Normalizada (%)", type: "number", step: "0.1", hint: "Média histórica da região" },
+    { key: "totalDebt", label: "Dívida Total (R$ milhões)", type: "number", step: "0.1" },
+    { key: "totalShares", label: "Total de Cotas (milhões)", type: "number", step: "0.1" },
     { key: "vpPerShare", label: "VP por Cota (R$)", type: "number", step: "0.01" },
   ],
   fii_papel: [
     { key: "ticker", label: "Ticker", type: "text", placeholder: "Ex: KNCR11" },
-    { key: "currentPrice", label: "Pre\u00E7o Atual (R$)", type: "number", step: "0.01" },
+    { key: "currentPrice", label: "Preço Atual (R$)", type: "number", step: "0.01" },
     { key: "vpPerShare", label: "VP por Cota (R$)", type: "number", step: "0.01" },
-    { key: "spreadMedio", label: "Spread M\u00E9dio Carteira (%)", type: "number", step: "0.1" },
-    { key: "duration", label: "Duration M\u00E9dia (anos)", type: "number", step: "0.1" },
-    { key: "ltvMedio", label: "LTV M\u00E9dio (%)", type: "number", step: "0.1" },
-    { key: "inadimplencia", label: "Inadimpl\u00EAncia (%)", type: "number", step: "0.1" },
+    { key: "spreadMedio", label: "Spread Médio Carteira (%)", type: "number", step: "0.1" },
+    { key: "duration", label: "Duration Média (anos)", type: "number", step: "0.1" },
+    { key: "ltvMedio", label: "LTV Médio (%)", type: "number", step: "0.1" },
+    { key: "inadimplencia", label: "Inadimplência (%)", type: "number", step: "0.1" },
     { key: "pctIPCA", label: "% Carteira IPCA+", type: "number", step: "1" },
     { key: "pctCDI", label: "% Carteira CDI+", type: "number", step: "1" },
     { key: "dividendYield", label: "Dividend Yield 12m (%)", type: "number", step: "0.1" },
@@ -197,8 +197,8 @@ function calculateValuation(sector, inputs) {
           "ROE": (roe * 100).toFixed(1) + "%",
           "Ke": (ke * 100).toFixed(1) + "%",
           "g": (g * 100).toFixed(1) + "%",
-          "ROE > Ke": roe > ke ? "\u2705 Cria valor" : "\u26A0\uFE0F Destr\u00F3i valor",
-          "P/E impl\u00EDcito": p.earningsPerShare > 0 ? (fairPrice / p.earningsPerShare).toFixed(1) + "x" : "N/A",
+          "ROE > Ke": roe > ke ? "✅ Cria valor" : "⚠️ Destrói valor",
+          "P/E implícito": p.earningsPerShare > 0 ? (fairPrice / p.earningsPerShare).toFixed(1) + "x" : "N/A",
         };
       }
       break;
@@ -218,7 +218,7 @@ function calculateValuation(sector, inputs) {
         details = {
           "FCF Anual (R$ mi)": fcfAnual.toFixed(0),
           "VP Total (R$ mi)": totalPV.toFixed(0),
-          "DY Impl\u00EDcito": p.currentPrice > 0 ? ((divPerShare / p.currentPrice) * 100).toFixed(1) + "%" : "N/A",
+          "DY Implícito": p.currentPrice > 0 ? ((divPerShare / p.currentPrice) * 100).toFixed(1) + "%" : "N/A",
           "Anos Restantes": p.concessionYears,
           "Payout": p.payout + "%",
         };
@@ -256,7 +256,7 @@ function calculateValuation(sector, inputs) {
           "Ajuste Combined Ratio": (crAdj * 100).toFixed(0) + "%",
           "P/B Justo Ajustado": (fairPrice / (p.bookValuePerShare || 1)).toFixed(2) + "x",
           "Combined Ratio": p.combinedRatio + "%",
-          "Resultado T\u00E9cnico": p.combinedRatio < 100 ? "\u2705 Lucro t\u00E9cnico" : "\u26A0\uFE0F Preju\u00EDzo t\u00E9cnico",
+          "Resultado Técnico": p.combinedRatio < 100 ? "✅ Lucro técnico" : "⚠️ Prejuízo técnico",
         };
       }
       break;
@@ -286,7 +286,7 @@ function calculateValuation(sector, inputs) {
         const navPerShare = nav / p.sharesOutstanding;
         details = {
           "NAV Total (R$ mi)": nav.toFixed(0),
-          "NAV/A\u00E7\u00E3o": navPerShare.toFixed(2),
+          "NAV/Ação": navPerShare.toFixed(2),
           "Desconto Aplicado": p.holdingDiscount + "%",
           "P/NAV Atual": (p.currentPrice / (navPerShare || 1)).toFixed(2) + "x",
           "Desconto Atual vs NAV": ((1 - p.currentPrice / (navPerShare || 1)) * 100).toFixed(1) + "%",
@@ -316,16 +316,16 @@ function calculateValuation(sector, inputs) {
         const nav = propertyValue - p.totalDebt;
         fairPrice = nav / p.totalShares;
         details = {
-          "Valor Im\u00F3veis (R$ mi)": propertyValue.toFixed(1),
+          "Valor Imóveis (R$ mi)": propertyValue.toFixed(1),
           "NAV (R$ mi)": nav.toFixed(1),
           "NAV/Cota": fairPrice.toFixed(2),
           "P/VP Atual": (p.currentPrice / (p.vpPerShare || 1)).toFixed(2) + "x",
           "Cap Rate": p.capRate + "%",
-          "FFO Yield Impl\u00EDcito": p.currentPrice > 0 ? ((p.noiAnual / p.totalShares / p.currentPrice) * 100).toFixed(1) + "%" : "N/A",
+          "FFO Yield Implícito": p.currentPrice > 0 ? ((p.noiAnual / p.totalShares / p.currentPrice) * 100).toFixed(1) + "%" : "N/A",
         };
         if (sector === "fii_shopping" && p.vendasM2 > 0) {
-          details["Vendas/m\u00B2"] = "R$ " + p.vendasM2.toFixed(0);
-          details["NOI/ABL (R$/m\u00B2/m\u00EAs)"] = p.ablTotal > 0 ? "R$ " + ((p.noiAnual * 1e6) / p.ablTotal / 12).toFixed(0) : "N/A";
+          details["Vendas/m²"] = "R$ " + p.vendasM2.toFixed(0);
+          details["NOI/ABL (R$/m²/mês)"] = p.ablTotal > 0 ? "R$ " + ((p.noiAnual * 1e6) / p.ablTotal / 12).toFixed(0) : "N/A";
         }
       }
       break;
@@ -340,11 +340,11 @@ function calculateValuation(sector, inputs) {
         fairPrice = nav / p.totalShares;
         details = {
           "NOI Ajustado (R$ mi)": noiAdjusted.toFixed(1),
-          "Valor Im\u00F3veis Ajust. (R$ mi)": propertyValue.toFixed(1),
+          "Valor Imóveis Ajust. (R$ mi)": propertyValue.toFixed(1),
           "NAV/Cota": fairPrice.toFixed(2),
           "P/VP Atual": (p.currentPrice / (p.vpPerShare || 1)).toFixed(2) + "x",
-          "Vac\u00E2ncia Atual": p.vacancyActual + "%",
-          "Vac\u00E2ncia Normalizada": p.vacancyNormalized + "%",
+          "Vacância Atual": p.vacancyActual + "%",
+          "Vacância Normalizada": p.vacancyNormalized + "%",
           "Cap Rate": p.capRate + "%",
         };
       }
@@ -359,10 +359,10 @@ function calculateValuation(sector, inputs) {
         details = {
           "P/VP Justo": fairPVP.toFixed(2) + "x",
           "P/VP Atual": (p.currentPrice / p.vpPerShare).toFixed(2) + "x",
-          "Spread M\u00E9dio": p.spreadMedio + "%",
+          "Spread Médio": p.spreadMedio + "%",
           "Duration": p.duration + " anos",
-          "LTV M\u00E9dio": p.ltvMedio + "%",
-          "Inadimpl\u00EAncia": p.inadimplencia + "%",
+          "LTV Médio": p.ltvMedio + "%",
+          "Inadimplência": p.inadimplencia + "%",
           "Mix IPCA/CDI": p.pctIPCA + "% / " + p.pctCDI + "%",
           "DY 12m": p.dividendYield + "%",
           "Yield vs NTN-B": ((p.dividendYield - p.ntnbRate) > 0 ? "+" : "") + (p.dividendYield - p.ntnbRate).toFixed(1) + "pp",
@@ -422,6 +422,119 @@ const colors = {
   chart3: "#f59e0b",
 };
 
+// ─── RESULT DETAIL CARD (reusable) ───
+function ResultDetailCard({ r, compact }) {
+  const vColor = r.verdict === "COMPRA" ? colors.green : r.verdict === "NEUTRO" ? colors.warning : colors.red;
+  const vBg = r.verdict === "COMPRA" ? colors.greenDim : r.verdict === "NEUTRO" ? colors.warning + "22" : colors.dangerDim;
+
+  const barData = r.fairPrice > 0 ? [
+    { name: "Preço Atual", value: r.currentPrice, fill: colors.blue },
+    { name: "Preço Justo", value: r.fairPrice, fill: colors.accent },
+    { name: "Preço c/ Margem", value: r.fairWithMargin, fill: colors.warning },
+  ] : [];
+
+  return (
+    <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, padding: 20, position: "relative", overflow: "hidden" }}>
+      <div style={{ position: "absolute", top: 0, right: 0, width: 120, height: 120, borderRadius: "0 0 0 120px", background: vBg, opacity: 0.5 }} />
+      <div style={{ position: "relative" }}>
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+          <div>
+            <h2 style={{ fontSize: compact ? 20 : 24, fontWeight: 700, margin: 0, fontFamily: "'JetBrains Mono', monospace" }}>{r.ticker}</h2>
+            <p style={{ fontSize: 12, color: colors.textMuted, margin: "2px 0 0 0" }}>{r.sectorLabel} - {r.timestamp}</p>
+          </div>
+          <div style={{ padding: "6px 16px", borderRadius: 6, background: vBg, color: vColor, fontWeight: 700, fontSize: 14, border: `1px solid ${vColor}44` }}>
+            {r.verdict}
+          </div>
+        </div>
+
+        {/* Price Cards */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
+          <div style={{ padding: 12, background: colors.surfaceAlt, borderRadius: 8, textAlign: "center" }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Preço Atual</div>
+            <div style={{ fontSize: compact ? 16 : 20, fontWeight: 700, color: colors.blue, fontFamily: "'JetBrains Mono', monospace" }}>R$ {r.currentPrice.toFixed(2)}</div>
+          </div>
+          <div style={{ padding: 12, background: colors.surfaceAlt, borderRadius: 8, textAlign: "center" }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Preço Justo</div>
+            <div style={{ fontSize: compact ? 16 : 20, fontWeight: 700, color: colors.accent, fontFamily: "'JetBrains Mono', monospace" }}>R$ {r.fairPrice.toFixed(2)}</div>
+            <div style={{ fontSize: 11, color: r.upside >= 0 ? colors.green : colors.red }}>
+              {r.upside >= 0 ? "▲" : "▼"} {r.upside.toFixed(1)}%
+            </div>
+          </div>
+          <div style={{ padding: 12, background: colors.surfaceAlt, borderRadius: 8, textAlign: "center" }}>
+            <div style={{ fontSize: 10, color: colors.textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>C/ Margem ({r.margin}%)</div>
+            <div style={{ fontSize: compact ? 16 : 20, fontWeight: 700, color: colors.warning, fontFamily: "'JetBrains Mono', monospace" }}>R$ {r.fairWithMargin.toFixed(2)}</div>
+            <div style={{ fontSize: 11, color: r.upsideWithMargin >= 0 ? colors.green : colors.red }}>
+              {r.upsideWithMargin >= 0 ? "▲" : "▼"} {r.upsideWithMargin.toFixed(1)}%
+            </div>
+          </div>
+        </div>
+
+        {/* Bar Chart */}
+        {barData.length > 0 && (
+          <div style={{ height: compact ? 180 : 220, marginBottom: 16 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={barData} barCategoryGap="25%">
+                <CartesianGrid strokeDasharray="3 3" stroke={colors.border} />
+                <XAxis dataKey="name" tick={{ fill: colors.textMuted, fontSize: 11 }} axisLine={{ stroke: colors.border }} />
+                <YAxis tick={{ fill: colors.textMuted, fontSize: 11, fontFamily: "'JetBrains Mono', monospace" }} axisLine={{ stroke: colors.border }} tickFormatter={(v) => `R$${v}`} />
+                <Tooltip contentStyle={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, fontSize: 12 }} formatter={(v) => [`R$ ${v.toFixed(2)}`, ""]} />
+                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                  {barData.map((entry, i) => (
+                    <Cell key={i} fill={entry.fill} />
+                  ))}
+                </Bar>
+                <ReferenceLine y={r.currentPrice} stroke={colors.blue} strokeDasharray="4 4" strokeWidth={1.5} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* Upside Gauge */}
+        <div style={{ padding: 12, background: colors.surfaceAlt, borderRadius: 8, marginBottom: 16 }}>
+          <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 8, fontWeight: 500 }}>UPSIDE / DOWNSIDE COM MARGEM</div>
+          <div style={{ position: "relative", height: 28, background: colors.bg, borderRadius: 14, overflow: "hidden" }}>
+            <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: 2, background: colors.textDim, zIndex: 2 }} />
+            <div style={{
+              position: "absolute",
+              top: 2, bottom: 2,
+              borderRadius: 12,
+              background: r.upsideWithMargin >= 0
+                ? `linear-gradient(90deg, transparent, ${colors.green})`
+                : `linear-gradient(90deg, ${colors.red}, transparent)`,
+              ...(r.upsideWithMargin >= 0
+                ? { left: "50%", width: `${Math.min(50, Math.abs(r.upsideWithMargin) / 2)}%` }
+                : { right: "50%", width: `${Math.min(50, Math.abs(r.upsideWithMargin) / 2)}%` }),
+              transition: "width 0.5s ease",
+            }} />
+            <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", fontSize: 12, fontWeight: 700, color: colors.text, fontFamily: "'JetBrains Mono', monospace", zIndex: 3 }}>
+              {r.upsideWithMargin >= 0 ? "+" : ""}{r.upsideWithMargin.toFixed(1)}%
+            </div>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: colors.textDim, marginTop: 4 }}>
+            <span>-50%</span><span>0%</span><span>+50%</span>
+          </div>
+        </div>
+
+        {/* Details Grid */}
+        {r.details && Object.keys(r.details).length > 0 && (
+          <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: 12 }}>
+            <h4 style={{ fontSize: 12, color: colors.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Detalhamento</h4>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+              {Object.entries(r.details).map(([key, value]) => (
+                <div key={key} style={{ display: "flex", justifyContent: "space-between", padding: "4px 8px", background: colors.surfaceAlt, borderRadius: 4, fontSize: 11 }}>
+                  <span style={{ color: colors.textMuted }}>{key}</span>
+                  <span style={{ fontWeight: 600, fontFamily: "'JetBrains Mono', monospace", color: String(value).includes("✅") ? colors.green : String(value).includes("⚠") ? colors.warning : colors.text }}>{value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN COMPONENT ───
 export default function ValuationApp() {
   const [selectedSector, setSelectedSector] = useState(null);
@@ -436,6 +549,7 @@ export default function ValuationApp() {
   const [history, setHistory] = useState([]);
   const [activeTab, setActiveTab] = useState("calc");
   const [showMethodology, setShowMethodology] = useState(false);
+  const [expandedHistoryIdx, setExpandedHistoryIdx] = useState(null);
 
   const sectorInfo = SECTORS.find((s) => s.id === selectedSector);
   const methodology = selectedSector ? SECTOR_METHODOLOGY[selectedSector] : null;
@@ -471,10 +585,10 @@ export default function ValuationApp() {
           ? extractFieldsFromText(fullText, selectedSector)
           : { extractedFields: {}, confidence: {} };
         setPdfData({ pages, fullText, numPages, ...extracted });
-        setUploadedData({ info: `PDF processado: ${numPages} p\u00E1gina(s). ${Object.keys(extracted.extractedFields).length} campo(s) detectado(s).` });
+        setUploadedData({ info: `PDF processado: ${numPages} página(s). ${Object.keys(extracted.extractedFields).length} campo(s) detectado(s).` });
         setPdfLoading(false);
       } else {
-        setUploadedData({ info: "Arquivo carregado: " + file.name + ". Para extra\u00E7\u00E3o autom\u00E1tica, use .xlsx, .csv ou .pdf." });
+        setUploadedData({ info: "Arquivo carregado: " + file.name + ". Para extração automática, use .xlsx, .csv ou .pdf." });
       }
     } catch (err) {
       setPdfLoading(false);
@@ -526,29 +640,26 @@ export default function ValuationApp() {
     setHistory((prev) => [newResult, ...prev.filter((h) => h.ticker !== newResult.ticker)].slice(0, 20));
   };
 
-  const chartData = useMemo(() => {
-    if (!result || result.fairPrice === 0) return [];
-    return [
-      { name: "Pre\u00E7o Atual", value: result.currentPrice, fill: colors.blue },
-      { name: "Pre\u00E7o Justo", value: result.fairPrice, fill: colors.accent },
-      { name: "Pre\u00E7o c/ Margem", value: result.fairWithMargin, fill: colors.warning },
-    ];
-  }, [result]);
-
   const historyChartData = useMemo(() => {
     return history.map((h) => ({
       name: h.ticker,
-      "Pre\u00E7o Atual": h.currentPrice,
-      "Pre\u00E7o Justo": h.fairPrice,
+      "Preço Atual": h.currentPrice,
+      "Preço Justo": h.fairPrice,
       "Com Margem": h.fairWithMargin,
     }));
   }, [history]);
 
-  const verdictColor = result?.verdict === "COMPRA" ? colors.green : result?.verdict === "NEUTRO" ? colors.warning : colors.red;
-  const verdictBg = result?.verdict === "COMPRA" ? colors.greenDim : result?.verdict === "NEUTRO" ? colors.warning + "22" : colors.dangerDim;
+  const handleDeleteHistory = (idx) => {
+    setHistory((prev) => prev.filter((_, i) => i !== idx));
+    if (expandedHistoryIdx === idx) setExpandedHistoryIdx(null);
+    else if (expandedHistoryIdx > idx) setExpandedHistoryIdx(expandedHistoryIdx - 1);
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: `linear-gradient(170deg, ${colors.bg} 0%, #0d1424 50%, #0a1018 100%)`, color: colors.text, fontFamily: "'DM Sans', 'Segoe UI', sans-serif" }}>
+      {/* Google Font */}
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
       {/* ─── HEADER ─── */}
       <header style={{ borderBottom: `1px solid ${colors.border}`, padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", backdropFilter: "blur(20px)", background: colors.bg + "dd", position: "sticky", top: 0, zIndex: 100 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -561,7 +672,7 @@ export default function ValuationApp() {
         <div style={{ display: "flex", gap: 8 }}>
           {["calc", "historico"].map((tab) => (
             <button key={tab} onClick={() => setActiveTab(tab)} style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${activeTab === tab ? colors.accent : colors.border}`, background: activeTab === tab ? colors.accentDim : "transparent", color: activeTab === tab ? colors.accent : colors.textMuted, fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "all 0.2s" }}>
-              {tab === "calc" ? "Calculadora" : "Hist\u00F3rico"}
+              {tab === "calc" ? "Calculadora" : `Histórico (${history.length})`}
             </button>
           ))}
           <button onClick={() => setShowMarginPanel(!showMarginPanel)} style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${showMarginPanel ? colors.warning : colors.border}`, background: showMarginPanel ? colors.warning + "22" : "transparent", color: showMarginPanel ? colors.warning : colors.textMuted, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
@@ -574,8 +685,8 @@ export default function ValuationApp() {
         {/* ─── MARGIN CONFIG PANEL ─── */}
         {showMarginPanel && (
           <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, padding: 20, marginBottom: 24, animation: "fadeIn 0.3s ease" }}>
-            <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 4, color: colors.warning }}>Configura\u00E7\u00E3o de Margem de Seguran\u00E7a</h3>
-            <p style={{ fontSize: 12, color: colors.textMuted, marginBottom: 16 }}>Ajuste a margem de seguran\u00E7a para cada setor. Valores mais altos = mais conservador.</p>
+            <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 4, color: colors.warning }}>Configuração de Margem de Segurança</h3>
+            <p style={{ fontSize: 12, color: colors.textMuted, marginBottom: 16 }}>Ajuste a margem de segurança para cada setor. Valores mais altos = mais conservador.</p>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
               {SECTORS.map((s) => (
                 <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: colors.surfaceAlt, borderRadius: 8, border: `1px solid ${colors.border}` }}>
@@ -592,7 +703,7 @@ export default function ValuationApp() {
               ))}
             </div>
             <button onClick={() => setMargins({ ...DEFAULT_MARGINS })} style={{ marginTop: 12, padding: "6px 12px", borderRadius: 6, border: `1px solid ${colors.border}`, background: "transparent", color: colors.textMuted, fontSize: 12, cursor: "pointer" }}>
-              Restaurar padr\u00F5es
+              Restaurar padrões
             </button>
           </div>
         )}
@@ -638,7 +749,7 @@ export default function ValuationApp() {
                     <div style={{ background: colors.surfaceAlt, borderRadius: 8, padding: 12, marginBottom: 16, borderLeft: `3px solid ${colors.accent}` }}>
                       <p style={{ fontSize: 12, fontWeight: 600, margin: "0 0 4px 0", color: colors.accent }}>{methodology.name}</p>
                       <p style={{ fontSize: 12, margin: "0 0 4px 0", fontFamily: "'JetBrains Mono', monospace", color: colors.text }}>{methodology.formula}</p>
-                      <p style={{ fontSize: 11, margin: 0, color: colors.textMuted }}>Margem de seguran\u00E7a: {margins[selectedSector]}% — {MARGIN_RATIONALE[selectedSector]}</p>
+                      <p style={{ fontSize: 11, margin: 0, color: colors.textMuted }}>Margem de segurança: {margins[selectedSector]}% — {MARGIN_RATIONALE[selectedSector]}</p>
                     </div>
                   )}
 
@@ -668,7 +779,7 @@ export default function ValuationApp() {
                     <label style={{ cursor: "pointer", display: "block" }}>
                       <input type="file" accept=".xlsx,.xls,.csv,.pdf" onChange={handleFileUpload} style={{ display: "none" }} />
                       <div style={{ fontSize: 12, color: colors.textMuted }}>
-                        {pdfLoading ? "Processando PDF..." : uploadFileName ? uploadFileName : "Upload relat\u00F3rio trimestral (.xlsx, .csv, .pdf)"}
+                        {pdfLoading ? "Processando PDF..." : uploadFileName ? uploadFileName : "Upload relatório trimestral (.xlsx, .csv, .pdf)"}
                       </div>
                     </label>
                     {uploadedData && !uploadedData.error && (
@@ -715,11 +826,11 @@ export default function ValuationApp() {
                   {pdfData && pdfData.pages && (
                     <div style={{ marginTop: 12, maxHeight: 180, overflow: "auto", borderRadius: 8, border: `1px solid ${colors.border}` }}>
                       <div style={{ padding: "6px 10px", background: colors.surfaceAlt, fontSize: 11, fontWeight: 600, color: colors.purple, position: "sticky", top: 0, zIndex: 1, borderBottom: `1px solid ${colors.border}` }}>
-                        Texto extra\u00EDdo ({pdfData.numPages} p\u00E1gina{pdfData.numPages > 1 ? "s" : ""})
+                        Texto extraído ({pdfData.numPages} página{pdfData.numPages > 1 ? "s" : ""})
                       </div>
                       {pdfData.pages.map((pg) => (
                         <div key={pg.pageNum} style={{ padding: "6px 10px", borderBottom: `1px solid ${colors.border}` }}>
-                          <div style={{ fontSize: 10, color: colors.textDim, marginBottom: 2 }}>P\u00E1gina {pg.pageNum}</div>
+                          <div style={{ fontSize: 10, color: colors.textDim, marginBottom: 2 }}>Página {pg.pageNum}</div>
                           <div style={{ fontSize: 10, color: colors.text, fontFamily: "'JetBrains Mono', monospace", whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: 1.5 }}>
                             {pg.text.length > 800 ? pg.text.slice(0, 800) + "..." : pg.text}
                           </div>
@@ -766,99 +877,7 @@ export default function ValuationApp() {
             {/* ─── RIGHT: RESULTS ─── */}
             {result && (
               <div>
-                {/* Verdict Card */}
-                <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, padding: 20, marginBottom: 20, position: "relative", overflow: "hidden" }}>
-                  <div style={{ position: "absolute", top: 0, right: 0, width: 120, height: 120, borderRadius: "0 0 0 120px", background: verdictBg, opacity: 0.5 }} />
-                  <div style={{ position: "relative" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-                      <div>
-                        <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0, fontFamily: "'JetBrains Mono', monospace" }}>{result.ticker}</h2>
-                        <p style={{ fontSize: 12, color: colors.textMuted, margin: "2px 0 0 0" }}>{result.sectorLabel} - {result.timestamp}</p>
-                      </div>
-                      <div style={{ padding: "6px 16px", borderRadius: 6, background: verdictBg, color: verdictColor, fontWeight: 700, fontSize: 14, border: `1px solid ${verdictColor}44` }}>
-                        {result.verdict}
-                      </div>
-                    </div>
-
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
-                      <div style={{ padding: 12, background: colors.surfaceAlt, borderRadius: 8, textAlign: "center" }}>
-                        <div style={{ fontSize: 10, color: colors.textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Pre\u00E7o Atual</div>
-                        <div style={{ fontSize: 20, fontWeight: 700, color: colors.blue, fontFamily: "'JetBrains Mono', monospace" }}>R$ {result.currentPrice.toFixed(2)}</div>
-                      </div>
-                      <div style={{ padding: 12, background: colors.surfaceAlt, borderRadius: 8, textAlign: "center" }}>
-                        <div style={{ fontSize: 10, color: colors.textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Pre\u00E7o Justo</div>
-                        <div style={{ fontSize: 20, fontWeight: 700, color: colors.accent, fontFamily: "'JetBrains Mono', monospace" }}>R$ {result.fairPrice.toFixed(2)}</div>
-                        <div style={{ fontSize: 11, color: result.upside >= 0 ? colors.green : colors.red }}>
-                          {result.upside >= 0 ? "\u25B2" : "\u25BC"} {result.upside.toFixed(1)}%
-                        </div>
-                      </div>
-                      <div style={{ padding: 12, background: colors.surfaceAlt, borderRadius: 8, textAlign: "center" }}>
-                        <div style={{ fontSize: 10, color: colors.textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>C/ Margem ({result.margin}%)</div>
-                        <div style={{ fontSize: 20, fontWeight: 700, color: colors.warning, fontFamily: "'JetBrains Mono', monospace" }}>R$ {result.fairWithMargin.toFixed(2)}</div>
-                        <div style={{ fontSize: 11, color: result.upsideWithMargin >= 0 ? colors.green : colors.red }}>
-                          {result.upsideWithMargin >= 0 ? "\u25B2" : "\u25BC"} {result.upsideWithMargin.toFixed(1)}%
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Price Comparison Chart */}
-                    <div style={{ height: 220, marginBottom: 16 }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData} barCategoryGap="25%">
-                          <CartesianGrid strokeDasharray="3 3" stroke={colors.border} />
-                          <XAxis dataKey="name" tick={{ fill: colors.textMuted, fontSize: 11 }} axisLine={{ stroke: colors.border }} />
-                          <YAxis tick={{ fill: colors.textMuted, fontSize: 11, fontFamily: "'JetBrains Mono', monospace" }} axisLine={{ stroke: colors.border }} tickFormatter={(v) => `R$${v}`} />
-                          <Tooltip contentStyle={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, fontSize: 12 }} formatter={(v) => [`R$ ${v.toFixed(2)}`, ""]} />
-                          <Bar dataKey="value" radius={[6, 6, 0, 0]}>
-                            {chartData.map((entry, i) => (
-                              <Cell key={i} fill={entry.fill} />
-                            ))}
-                          </Bar>
-                          <ReferenceLine y={result.currentPrice} stroke={colors.blue} strokeDasharray="4 4" strokeWidth={1.5} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-
-                    {/* Upside Visual Gauge */}
-                    <div style={{ padding: 12, background: colors.surfaceAlt, borderRadius: 8, marginBottom: 16 }}>
-                      <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 8, fontWeight: 500 }}>UPSIDE / DOWNSIDE COM MARGEM</div>
-                      <div style={{ position: "relative", height: 28, background: colors.bg, borderRadius: 14, overflow: "hidden" }}>
-                        <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, width: 2, background: colors.textDim, zIndex: 2 }} />
-                        <div style={{
-                          position: "absolute",
-                          top: 2, bottom: 2,
-                          borderRadius: 12,
-                          background: result.upsideWithMargin >= 0
-                            ? `linear-gradient(90deg, transparent, ${colors.green})`
-                            : `linear-gradient(90deg, ${colors.red}, transparent)`,
-                          ...(result.upsideWithMargin >= 0
-                            ? { left: "50%", width: `${Math.min(50, Math.abs(result.upsideWithMargin) / 2)}%` }
-                            : { right: "50%", width: `${Math.min(50, Math.abs(result.upsideWithMargin) / 2)}%` }),
-                          transition: "width 0.5s ease",
-                        }} />
-                        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", fontSize: 12, fontWeight: 700, color: colors.text, fontFamily: "'JetBrains Mono', monospace", zIndex: 3 }}>
-                          {result.upsideWithMargin >= 0 ? "+" : ""}{result.upsideWithMargin.toFixed(1)}%
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: colors.textDim, marginTop: 4 }}>
-                        <span>-50%</span><span>0%</span><span>+50%</span>
-                      </div>
-                    </div>
-
-                    {/* Details */}
-                    <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: 12 }}>
-                      <h4 style={{ fontSize: 12, color: colors.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Detalhamento</h4>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                        {Object.entries(result.details).map(([key, value]) => (
-                          <div key={key} style={{ display: "flex", justifyContent: "space-between", padding: "4px 8px", background: colors.surfaceAlt, borderRadius: 4, fontSize: 11 }}>
-                            <span style={{ color: colors.textMuted }}>{key}</span>
-                            <span style={{ fontWeight: 600, fontFamily: "'JetBrains Mono', monospace", color: String(value).includes("\u2705") ? colors.green : String(value).includes("\u26A0") ? colors.warning : colors.text }}>{value}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <ResultDetailCard r={result} />
               </div>
             )}
           </div>
@@ -868,12 +887,12 @@ export default function ValuationApp() {
             {history.length === 0 ? (
               <div style={{ textAlign: "center", padding: 60, color: colors.textMuted }}>
                 <div style={{ fontSize: 48, marginBottom: 12 }}>📊</div>
-                <p style={{ fontSize: 14 }}>Nenhum c\u00E1lculo realizado ainda.</p>
-                <p style={{ fontSize: 12 }}>Use a calculadora para come\u00E7ar a avaliar ativos.</p>
+                <p style={{ fontSize: 14 }}>Nenhum cálculo realizado ainda.</p>
+                <p style={{ fontSize: 12 }}>Use a calculadora para começar a avaliar ativos.</p>
               </div>
             ) : (
               <>
-                {/* History Chart */}
+                {/* History Comparison Chart */}
                 {historyChartData.length > 1 && (
                   <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, padding: 20, marginBottom: 20 }}>
                     <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>Comparativo de Ativos</h3>
@@ -885,8 +904,8 @@ export default function ValuationApp() {
                           <YAxis tick={{ fill: colors.textMuted, fontSize: 11, fontFamily: "'JetBrains Mono', monospace" }} axisLine={{ stroke: colors.border }} tickFormatter={(v) => `R$${v}`} />
                           <Tooltip contentStyle={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, fontSize: 12 }} formatter={(v) => [`R$ ${v.toFixed(2)}`, ""]} />
                           <Legend wrapperStyle={{ fontSize: 11 }} />
-                          <Bar dataKey="Pre\u00E7o Atual" fill={colors.blue} radius={[4, 4, 0, 0]} />
-                          <Bar dataKey="Pre\u00E7o Justo" fill={colors.accent} radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="Preço Atual" fill={colors.blue} radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="Preço Justo" fill={colors.accent} radius={[4, 4, 0, 0]} />
                           <Bar dataKey="Com Margem" fill={colors.warning} radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
@@ -894,12 +913,48 @@ export default function ValuationApp() {
                   </div>
                 )}
 
-                {/* History Cards */}
+                {/* History Summary Strip */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
+                  {history.map((h, i) => {
+                    const vc = h.verdict === "COMPRA" ? colors.green : h.verdict === "NEUTRO" ? colors.warning : colors.red;
+                    const isExpanded = expandedHistoryIdx === i;
+                    return (
+                      <button key={i} onClick={() => setExpandedHistoryIdx(isExpanded ? null : i)} style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${isExpanded ? vc : colors.border}`, background: isExpanded ? vc + "18" : colors.surface, color: colors.text, fontSize: 12, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
+                        <span style={{ fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>{h.ticker}</span>
+                        <span style={{ padding: "1px 6px", borderRadius: 3, background: vc + "22", color: vc, fontSize: 10, fontWeight: 700 }}>{h.verdict}</span>
+                        <span style={{ fontSize: 11, color: colors.textMuted }}>{h.upsideWithMargin >= 0 ? "+" : ""}{h.upsideWithMargin.toFixed(1)}%</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Expanded Detail Card for selected history item */}
+                {expandedHistoryIdx !== null && history[expandedHistoryIdx] && (
+                  <div style={{ marginBottom: 20, animation: "fadeIn 0.3s ease" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <h3 style={{ fontSize: 14, fontWeight: 600, color: colors.textMuted }}>
+                        Detalhes — {history[expandedHistoryIdx].ticker}
+                      </h3>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => handleDeleteHistory(expandedHistoryIdx)} style={{ padding: "4px 10px", borderRadius: 4, border: `1px solid ${colors.red}44`, background: "transparent", color: colors.red, fontSize: 11, cursor: "pointer" }}>
+                          Remover
+                        </button>
+                        <button onClick={() => setExpandedHistoryIdx(null)} style={{ padding: "4px 10px", borderRadius: 4, border: `1px solid ${colors.border}`, background: "transparent", color: colors.textMuted, fontSize: 11, cursor: "pointer" }}>
+                          Fechar
+                        </button>
+                      </div>
+                    </div>
+                    <ResultDetailCard r={history[expandedHistoryIdx]} compact />
+                  </div>
+                )}
+
+                {/* History Cards Grid */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 12 }}>
                   {history.map((h, i) => {
                     const vc = h.verdict === "COMPRA" ? colors.green : h.verdict === "NEUTRO" ? colors.warning : colors.red;
+                    const isExpanded = expandedHistoryIdx === i;
                     return (
-                      <div key={i} style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 10, padding: 16 }}>
+                      <div key={i} onClick={() => setExpandedHistoryIdx(isExpanded ? null : i)} style={{ background: colors.surface, border: `1px solid ${isExpanded ? vc : colors.border}`, borderRadius: 10, padding: 16, cursor: "pointer", transition: "all 0.2s", transform: isExpanded ? "scale(0.98)" : "scale(1)" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                           <div>
                             <span style={{ fontSize: 16, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>{h.ticker}</span>
@@ -912,7 +967,10 @@ export default function ValuationApp() {
                           <div><span style={{ color: colors.textMuted }}>Justo</span><div style={{ fontWeight: 600, fontFamily: "'JetBrains Mono', monospace", color: colors.accent }}>R$ {h.fairPrice.toFixed(2)}</div></div>
                           <div><span style={{ color: colors.textMuted }}>Upside</span><div style={{ fontWeight: 600, fontFamily: "'JetBrains Mono', monospace", color: h.upsideWithMargin >= 0 ? colors.green : colors.red }}>{h.upsideWithMargin >= 0 ? "+" : ""}{h.upsideWithMargin.toFixed(1)}%</div></div>
                         </div>
-                        <div style={{ fontSize: 10, color: colors.textDim, marginTop: 6 }}>{h.timestamp}</div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
+                          <span style={{ fontSize: 10, color: colors.textDim }}>{h.timestamp}</span>
+                          <span style={{ fontSize: 10, color: isExpanded ? vc : colors.textDim }}>{isExpanded ? "▲ Expandido" : "▼ Clique para detalhes"}</span>
+                        </div>
                       </div>
                     );
                   })}
@@ -925,9 +983,9 @@ export default function ValuationApp() {
 
       {/* Footer */}
       <footer style={{ padding: "20px 24px", borderTop: `1px solid ${colors.border}`, textAlign: "center", fontSize: 11, color: colors.textDim, marginTop: 40 }}>
-        ValuationPro - Framework Multi-Setor para Valuation de A\u00E7\u00F5es e FIIs brasileiros<br />
-        Metodologias: Excess Return, DCF Regulat\u00F3rio, SOTP, NAV/Cap Rate, An\u00E1lise de Cr\u00E9dito<br />
-        Ferramenta educacional — n\u00E3o constitui recomenda\u00E7\u00E3o de investimento
+        ValuationPro - Framework Multi-Setor para Valuation de Ações e FIIs brasileiros<br />
+        Metodologias: Excess Return, DCF Regulatório, SOTP, NAV/Cap Rate, Análise de Crédito<br />
+        Ferramenta educacional — não constitui recomendação de investimento
       </footer>
 
       <style>{`
