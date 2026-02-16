@@ -243,7 +243,9 @@ function calculateValuation(sector, inputs) {
       if (ke > g && p.sharesOutstanding > 0 && p.concessionYears > 0) {
         let totalPV = 0;
         for (let t = 1; t <= p.concessionYears; t++) {
-          const fcf_t = fcfAnual * Math.pow(1 + g, t);
+          // Only RAP grows by g (Crescimento da RAP); OPEX and Capex stay flat
+          const rap_t = p.rapAnual * Math.pow(1 + g, t);
+          const fcf_t = rap_t - p.opex - p.capex;
           totalPV += fcf_t / Math.pow(1 + ke, t);
         }
         fairPrice = totalPV / p.sharesOutstanding;
@@ -480,7 +482,7 @@ function calculateValuation(sector, inputs) {
     }
   }
 
-  return { fairPrice: Math.max(0, fairPrice), details };
+  return { fairPrice, details };
 }
 
 // ─── EXCEL PARSER ───
