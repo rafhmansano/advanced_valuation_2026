@@ -16,6 +16,7 @@ const SECTORS = [
   { id: "fii_shopping", label: "FIIs Shoppings", icon: "🛍️", type: "fii" },
   { id: "fii_lajes", label: "FIIs Lajes", icon: "🏗️", type: "fii" },
   { id: "fii_papel", label: "FIIs Papel", icon: "📄", type: "fii" },
+  { id: "fii_hibrido", label: "FIIs Híbrido", icon: "🔀", type: "fii" },
 ];
 
 const DEFAULT_MARGINS = {
@@ -30,6 +31,7 @@ const DEFAULT_MARGINS = {
   fii_shopping: 15,
   fii_lajes: 20,
   fii_papel: 15,
+  fii_hibrido: 15,
 };
 
 const MARGIN_RATIONALE = {
@@ -44,6 +46,7 @@ const MARGIN_RATIONALE = {
   fii_shopping: "Sensibilidade ao ciclo econômico e varejo",
   fii_lajes: "Vacância estrutural, home office, ciclo imobiliário",
   fii_papel: "Risco de crédito, sensibilidade a juros e inflação",
+  fii_hibrido: "Diversificação reduz risco, complexidade de análise aumenta",
 };
 
 const SECTOR_METHODOLOGY = {
@@ -58,6 +61,7 @@ const SECTOR_METHODOLOGY = {
   fii_shopping: { name: "NAV (Cap Rate) + NOI/ABL", formula: "NAV = (NOI / Cap Rate) − Dívida" },
   fii_lajes: { name: "NAV Ajustado por Vacância", formula: "NAV = (NOI×(1−vac_norm) / Cap Rate) − Dívida" },
   fii_papel: { name: "Análise de Crédito / P/VP", formula: "VP justo ≈ VP × (spread_adj / risco)" },
+  fii_hibrido: { name: "SOTP (NAV Ponderado por Classe)", formula: "NAV = Σ(NOI_i / CapRate_i) + VP_papel − Dívida" },
 };
 
 // ─── INPUT FIELD DEFINITIONS PER SECTOR ───
@@ -169,6 +173,34 @@ const SECTOR_FIELDS = {
     { key: "pctCDI", label: "% Carteira CDI+", type: "number", step: "1" },
     { key: "dividendYield", label: "Dividend Yield 12m (%)", type: "number", step: "0.1" },
     { key: "ntnbRate", label: "NTN-B Longa (%)", type: "number", step: "0.1" },
+  ],
+  fii_hibrido: [
+    { key: "ticker", label: "Ticker", type: "text", placeholder: "Ex: KNIP11" },
+    { key: "currentPrice", label: "Preço Atual da Cota (R$)", type: "number", step: "0.01" },
+    { key: "vpPerShare", label: "VP por Cota (R$)", type: "number", step: "0.01" },
+    { key: "totalShares", label: "Total de Cotas (milhões)", type: "number", step: "0.1" },
+    { key: "totalDebt", label: "Dívida Total do Fundo (R$ milhões)", type: "number", step: "0.1" },
+    // ── Logístico ──
+    { key: "_section_log", label: "── Segmento Logístico ──", type: "section" },
+    { key: "noiLogistico", label: "NOI Logístico Anual (R$ mi)", type: "number", step: "0.1", hint: "Receita operacional líquida dos galpões" },
+    { key: "capRateLogistico", label: "Cap Rate Logístico (%)", type: "number", step: "0.1", hint: "Referência: 7-9%" },
+    // ── Lajes ──
+    { key: "_section_laj", label: "── Segmento Lajes Corporativas ──", type: "section" },
+    { key: "noiLajes", label: "NOI Lajes Anual (R$ mi)", type: "number", step: "0.1", hint: "Receita operacional líquida das lajes" },
+    { key: "capRateLajes", label: "Cap Rate Lajes (%)", type: "number", step: "0.1", hint: "Referência: 8-11%" },
+    { key: "vacLajes", label: "Vacância Lajes Normalizada (%)", type: "number", step: "0.1", hint: "Vacância média normalizada do segmento lajes" },
+    // ── Shopping ──
+    { key: "_section_shop", label: "── Segmento Shoppings ──", type: "section" },
+    { key: "noiShopping", label: "NOI Shopping Anual (R$ mi)", type: "number", step: "0.1", hint: "Receita operacional líquida dos shoppings" },
+    { key: "capRateShopping", label: "Cap Rate Shopping (%)", type: "number", step: "0.1", hint: "Referência: 7-10%" },
+    // ── Outros ──
+    { key: "_section_outros", label: "── Outros Imóveis ──", type: "section" },
+    { key: "noiOutros", label: "NOI Outros Anual (R$ mi)", type: "number", step: "0.1", hint: "Agências, educação, saúde, etc." },
+    { key: "capRateOutros", label: "Cap Rate Outros (%)", type: "number", step: "0.1", hint: "Referência: 8-12%" },
+    // ── Papel / CRI ──
+    { key: "_section_papel", label: "── Alocação em Papel / CRI ──", type: "section" },
+    { key: "vpPapel", label: "VP da Carteira de CRIs (R$ mi)", type: "number", step: "0.1", hint: "Valor patrimonial da carteira de recebíveis" },
+    { key: "pvpPapel", label: "P/VP Justo Papel (múltiplo)", type: "number", step: "0.01", hint: "Referência: 0.9-1.1x" },
   ],
 };
 
@@ -367,6 +399,81 @@ function calculateValuation(sector, inputs) {
           "DY 12m": p.dividendYield + "%",
           "Yield vs NTN-B": ((p.dividendYield - p.ntnbRate) > 0 ? "+" : "") + (p.dividendYield - p.ntnbRate).toFixed(1) + "pp",
         };
+      }
+      break;
+    }
+    case "fii_hibrido": {
+      if (p.totalShares > 0) {
+        // Sum-of-the-Parts: value each real estate class via NOI/CapRate
+        const segments = [];
+        const crLog = p.capRateLogistico / 100;
+        const crLaj = p.capRateLajes / 100;
+        const crShop = p.capRateShopping / 100;
+        const crOut = p.capRateOutros / 100;
+        const vacL = p.vacLajes / 100;
+
+        // Logístico slice
+        const valLog = crLog > 0 ? p.noiLogistico / crLog : 0;
+        // Lajes slice (adjusted for normalized vacancy)
+        const noiLajAdj = p.noiLajes * (1 - vacL);
+        const valLaj = crLaj > 0 ? noiLajAdj / crLaj : 0;
+        // Shopping/Varejo slice
+        const valShop = crShop > 0 ? p.noiShopping / crShop : 0;
+        // Outros imóveis slice
+        const valOut = crOut > 0 ? p.noiOutros / crOut : 0;
+        // Papel (CRI) slice with P/VP adjustment
+        const valPapel = (p.vpPapel || 0) * (p.pvpPapel || 1);
+
+        if (valLog > 0) segments.push({ name: "Logístico", noi: p.noiLogistico, cr: p.capRateLogistico, val: valLog });
+        if (valLaj > 0) segments.push({ name: "Lajes", noi: noiLajAdj, cr: p.capRateLajes, val: valLaj });
+        if (valShop > 0) segments.push({ name: "Shopping", noi: p.noiShopping, cr: p.capRateShopping, val: valShop });
+        if (valOut > 0) segments.push({ name: "Outros", noi: p.noiOutros, cr: p.capRateOutros, val: valOut });
+
+        const totalRealEstate = valLog + valLaj + valShop + valOut;
+        const grossNAV = totalRealEstate + valPapel;
+        const netNAV = grossNAV - p.totalDebt;
+        fairPrice = netNAV / p.totalShares;
+
+        details = {};
+        segments.forEach((seg) => {
+          details[`${seg.name} (NOI R$ mi)`] = seg.noi.toFixed(1);
+          details[`${seg.name} Cap Rate`] = seg.cr.toFixed(1) + "%";
+          details[`${seg.name} Valor (R$ mi)`] = seg.val.toFixed(1);
+        });
+        if (valPapel > 0) {
+          details["Carteira CRI (R$ mi)"] = valPapel.toFixed(1);
+          if (p.pvpPapel) details["P/VP Papel Aplicado"] = p.pvpPapel.toFixed(2) + "x";
+        }
+        if (vacL > 0) details["Vacância Lajes Ajust."] = p.vacLajes + "%";
+        details["Valor Imóveis (R$ mi)"] = totalRealEstate.toFixed(1);
+        details["NAV Bruto (R$ mi)"] = grossNAV.toFixed(1);
+        details["(-) Dívida (R$ mi)"] = p.totalDebt.toFixed(1);
+        details["NAV Líquido (R$ mi)"] = netNAV.toFixed(1);
+        details["NAV/Cota"] = "R$ " + fairPrice.toFixed(2);
+        details["P/VP Atual"] = (p.currentPrice / (p.vpPerShare || 1)).toFixed(2) + "x";
+
+        // Show composition percentages
+        if (grossNAV > 0) {
+          const pcts = [];
+          if (valLog > 0) pcts.push(`Log ${(valLog / grossNAV * 100).toFixed(0)}%`);
+          if (valLaj > 0) pcts.push(`Laj ${(valLaj / grossNAV * 100).toFixed(0)}%`);
+          if (valShop > 0) pcts.push(`Shop ${(valShop / grossNAV * 100).toFixed(0)}%`);
+          if (valOut > 0) pcts.push(`Out ${(valOut / grossNAV * 100).toFixed(0)}%`);
+          if (valPapel > 0) pcts.push(`CRI ${(valPapel / grossNAV * 100).toFixed(0)}%`);
+          details["Composição"] = pcts.join(" | ");
+        }
+
+        // FFO Yield calculation
+        const totalNoi = p.noiLogistico + noiLajAdj + p.noiShopping + p.noiOutros;
+        if (p.currentPrice > 0 && p.totalShares > 0) {
+          details["FFO Yield"] = ((totalNoi / p.totalShares / p.currentPrice) * 100).toFixed(1) + "%";
+        }
+
+        // Diversification indicator
+        const assetClasses = segments.length + (valPapel > 0 ? 1 : 0);
+        details["Diversificação"] = assetClasses >= 3
+          ? `✅ Boa (${assetClasses} classes)`
+          : `⚠️ Concentrado (${assetClasses} classe${assetClasses !== 1 ? "s" : ""})`;
       }
       break;
     }

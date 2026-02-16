@@ -163,6 +163,29 @@ const FIELD_PATTERNS = {
       /(?:dividend\s*yield|DY)\s*(?:12\s*m|anualizado)?[^\\d]*?(-?[\d.,]+)\s*%/i,
     ],
   },
+  fii_hibrido: {
+    vpPerShare: [
+      /(?:VP\s*(?:por|\/)\s*cota|valor\s+patrimonial\s*(?:por|\/)\s*cota)[^\\d]*?R?\$?\s*(-?[\d.,]+)/i,
+    ],
+    noiLogistico: [
+      /(?:NOI\s+log[ií]stic[oa])[^\\d]*?R?\$?\s*(-?[\d.,]+)/i,
+    ],
+    noiLajes: [
+      /(?:NOI\s+lajes?)[^\\d]*?R?\$?\s*(-?[\d.,]+)/i,
+    ],
+    noiShopping: [
+      /(?:NOI\s+shopping)[^\\d]*?R?\$?\s*(-?[\d.,]+)/i,
+    ],
+    noiOutros: [
+      /(?:NOI\s+outros)[^\\d]*?R?\$?\s*(-?[\d.,]+)/i,
+    ],
+    vpPapel: [
+      /(?:VP\s+(?:da\s+)?carteira\s+(?:de\s+)?CRI|carteira\s+de\s+receb[ií]veis)[^\\d]*?R?\$?\s*(-?[\d.,]+)/i,
+    ],
+    vacLajes: [
+      /(?:vac[aâ]ncia\s+lajes?)[^\\d]*?(-?[\d.,]+)\s*%/i,
+    ],
+  },
 };
 
 // Common fields extracted regardless of sector
