@@ -999,6 +999,16 @@ export default function ValuationApp() {
               </div>
             ) : (
               <>
+                {/* Header */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                  <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>
+                    {`Histórico de Valuations (${history.length} ativo${history.length !== 1 ? "s" : ""})`}
+                  </h3>
+                  <button onClick={() => setHistory([])} style={{ padding: "6px 12px", borderRadius: 6, border: `1px solid ${colors.red}44`, background: colors.dangerDim, color: colors.red, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
+                    Limpar tudo
+                  </button>
+                </div>
+
                 {/* History Comparison Chart */}
                 {historyChartData.length > 1 && (
                   <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, padding: 20, marginBottom: 20 }}>
@@ -1011,8 +1021,8 @@ export default function ValuationApp() {
                           <YAxis tick={{ fill: colors.textMuted, fontSize: 11, fontFamily: "'JetBrains Mono', monospace" }} axisLine={{ stroke: colors.border }} tickFormatter={(v) => `R$${v}`} />
                           <Tooltip contentStyle={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 8, fontSize: 12 }} formatter={(v) => [`R$ ${v.toFixed(2)}`, ""]} />
                           <Legend wrapperStyle={{ fontSize: 11 }} />
-                          <Bar dataKey="Preço Atual" fill={colors.blue} radius={[4, 4, 0, 0]} />
-                          <Bar dataKey="Preço Justo" fill={colors.accent} radius={[4, 4, 0, 0]} />
+                          <Bar dataKey={"Preço Atual"} fill={colors.blue} radius={[4, 4, 0, 0]} />
+                          <Bar dataKey={"Preço Justo"} fill={colors.accent} radius={[4, 4, 0, 0]} />
                           <Bar dataKey="Com Margem" fill={colors.warning} radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
@@ -1020,67 +1030,23 @@ export default function ValuationApp() {
                   </div>
                 )}
 
-                {/* History Summary Strip */}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
-                  {history.map((h, i) => {
-                    const vc = h.verdict === "COMPRA" ? colors.green : h.verdict === "NEUTRO" ? colors.warning : colors.red;
-                    const isExpanded = expandedHistoryIdx === i;
-                    return (
-                      <button key={i} onClick={() => setExpandedHistoryIdx(isExpanded ? null : i)} style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${isExpanded ? vc : colors.border}`, background: isExpanded ? vc + "18" : colors.surface, color: colors.text, fontSize: 12, fontWeight: 500, cursor: "pointer", display: "flex", alignItems: "center", gap: 8, transition: "all 0.2s" }}>
-                        <span style={{ fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>{h.ticker}</span>
-                        <span style={{ padding: "1px 6px", borderRadius: 3, background: vc + "22", color: vc, fontSize: 10, fontWeight: 700 }}>{h.verdict}</span>
-                        <span style={{ fontSize: 11, color: colors.textMuted }}>{h.upsideWithMargin >= 0 ? "+" : ""}{h.upsideWithMargin.toFixed(1)}%</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Expanded Detail Card for selected history item */}
-                {expandedHistoryIdx !== null && history[expandedHistoryIdx] && (
-                  <div style={{ marginBottom: 20, animation: "fadeIn 0.3s ease" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                      <h3 style={{ fontSize: 14, fontWeight: 600, color: colors.textMuted }}>
-                        Detalhes — {history[expandedHistoryIdx].ticker}
-                      </h3>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button onClick={() => handleDeleteHistory(expandedHistoryIdx)} style={{ padding: "4px 10px", borderRadius: 4, border: `1px solid ${colors.red}44`, background: "transparent", color: colors.red, fontSize: 11, cursor: "pointer" }}>
+                {/* Full Detail Cards for each history item */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+                  {history.map((h, i) => (
+                    <div key={i} style={{ animation: "fadeIn 0.3s ease" }}>
+                      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 6 }}>
+                        <button
+                          onClick={() => handleDeleteHistory(i)}
+                          style={{ padding: "5px 12px", borderRadius: 5, border: `1px solid ${colors.red}44`, background: "transparent", color: colors.red, fontSize: 11, fontWeight: 500, cursor: "pointer", transition: "all 0.2s" }}
+                          onMouseEnter={(e) => { e.target.style.background = colors.dangerDim; }}
+                          onMouseLeave={(e) => { e.target.style.background = "transparent"; }}
+                        >
                           Remover
                         </button>
-                        <button onClick={() => setExpandedHistoryIdx(null)} style={{ padding: "4px 10px", borderRadius: 4, border: `1px solid ${colors.border}`, background: "transparent", color: colors.textMuted, fontSize: 11, cursor: "pointer" }}>
-                          Fechar
-                        </button>
                       </div>
+                      <ResultDetailCard r={h} />
                     </div>
-                    <ResultDetailCard r={history[expandedHistoryIdx]} compact />
-                  </div>
-                )}
-
-                {/* History Cards Grid */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 12 }}>
-                  {history.map((h, i) => {
-                    const vc = h.verdict === "COMPRA" ? colors.green : h.verdict === "NEUTRO" ? colors.warning : colors.red;
-                    const isExpanded = expandedHistoryIdx === i;
-                    return (
-                      <div key={i} onClick={() => setExpandedHistoryIdx(isExpanded ? null : i)} style={{ background: colors.surface, border: `1px solid ${isExpanded ? vc : colors.border}`, borderRadius: 10, padding: 16, cursor: "pointer", transition: "all 0.2s", transform: isExpanded ? "scale(0.98)" : "scale(1)" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                          <div>
-                            <span style={{ fontSize: 16, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace" }}>{h.ticker}</span>
-                            <span style={{ fontSize: 11, color: colors.textMuted, marginLeft: 8 }}>{h.sectorLabel}</span>
-                          </div>
-                          <span style={{ padding: "2px 8px", borderRadius: 4, background: vc + "22", color: vc, fontSize: 11, fontWeight: 700 }}>{h.verdict}</span>
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, fontSize: 11 }}>
-                          <div><span style={{ color: colors.textMuted }}>Atual</span><div style={{ fontWeight: 600, fontFamily: "'JetBrains Mono', monospace" }}>R$ {h.currentPrice.toFixed(2)}</div></div>
-                          <div><span style={{ color: colors.textMuted }}>Justo</span><div style={{ fontWeight: 600, fontFamily: "'JetBrains Mono', monospace", color: colors.accent }}>R$ {h.fairPrice.toFixed(2)}</div></div>
-                          <div><span style={{ color: colors.textMuted }}>Upside</span><div style={{ fontWeight: 600, fontFamily: "'JetBrains Mono', monospace", color: h.upsideWithMargin >= 0 ? colors.green : colors.red }}>{h.upsideWithMargin >= 0 ? "+" : ""}{h.upsideWithMargin.toFixed(1)}%</div></div>
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
-                          <span style={{ fontSize: 10, color: colors.textDim }}>{h.timestamp}</span>
-                          <span style={{ fontSize: 10, color: isExpanded ? vc : colors.textDim }}>{isExpanded ? "▲ Expandido" : "▼ Clique para detalhes"}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  ))}
                 </div>
               </>
             )}
