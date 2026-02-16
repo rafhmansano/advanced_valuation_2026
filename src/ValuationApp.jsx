@@ -542,11 +542,11 @@ function ResultDetailCard({ r, compact }) {
   ] : [];
 
   return (
-    <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, padding: 20, position: "relative", overflow: "hidden" }}>
+    <div className="result-card" style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, padding: 20, position: "relative", overflow: "hidden" }}>
       <div style={{ position: "absolute", top: 0, right: 0, width: 120, height: 120, borderRadius: "0 0 0 120px", background: vBg, opacity: 0.5 }} />
       <div style={{ position: "relative" }}>
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
           <div>
             <h2 style={{ fontSize: compact ? 20 : 24, fontWeight: 700, margin: 0, fontFamily: "'JetBrains Mono', monospace" }}>{r.ticker}</h2>
             <p style={{ fontSize: 12, color: colors.textMuted, margin: "2px 0 0 0" }}>{r.sectorLabel} - {r.timestamp}</p>
@@ -557,21 +557,21 @@ function ResultDetailCard({ r, compact }) {
         </div>
 
         {/* Price Cards */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
+        <div className="price-cards" style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 16 }}>
           <div style={{ padding: 12, background: colors.surfaceAlt, borderRadius: 8, textAlign: "center" }}>
             <div style={{ fontSize: 10, color: colors.textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Preço Atual</div>
-            <div style={{ fontSize: compact ? 16 : 20, fontWeight: 700, color: colors.blue, fontFamily: "'JetBrains Mono', monospace" }}>R$ {r.currentPrice.toFixed(2)}</div>
+            <div className="price-value" style={{ fontSize: compact ? 16 : 20, fontWeight: 700, color: colors.blue, fontFamily: "'JetBrains Mono', monospace" }}>R$ {r.currentPrice.toFixed(2)}</div>
           </div>
           <div style={{ padding: 12, background: colors.surfaceAlt, borderRadius: 8, textAlign: "center" }}>
             <div style={{ fontSize: 10, color: colors.textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Preço Justo</div>
-            <div style={{ fontSize: compact ? 16 : 20, fontWeight: 700, color: colors.accent, fontFamily: "'JetBrains Mono', monospace" }}>R$ {r.fairPrice.toFixed(2)}</div>
+            <div className="price-value" style={{ fontSize: compact ? 16 : 20, fontWeight: 700, color: colors.accent, fontFamily: "'JetBrains Mono', monospace" }}>R$ {r.fairPrice.toFixed(2)}</div>
             <div style={{ fontSize: 11, color: r.upside >= 0 ? colors.green : colors.red }}>
               {r.upside >= 0 ? "▲" : "▼"} {r.upside.toFixed(1)}%
             </div>
           </div>
           <div style={{ padding: 12, background: colors.surfaceAlt, borderRadius: 8, textAlign: "center" }}>
             <div style={{ fontSize: 10, color: colors.textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>C/ Margem ({r.margin}%)</div>
-            <div style={{ fontSize: compact ? 16 : 20, fontWeight: 700, color: colors.warning, fontFamily: "'JetBrains Mono', monospace" }}>R$ {r.fairWithMargin.toFixed(2)}</div>
+            <div className="price-value" style={{ fontSize: compact ? 16 : 20, fontWeight: 700, color: colors.warning, fontFamily: "'JetBrains Mono', monospace" }}>R$ {r.fairWithMargin.toFixed(2)}</div>
             <div style={{ fontSize: 11, color: r.upsideWithMargin >= 0 ? colors.green : colors.red }}>
               {r.upsideWithMargin >= 0 ? "▲" : "▼"} {r.upsideWithMargin.toFixed(1)}%
             </div>
@@ -628,11 +628,11 @@ function ResultDetailCard({ r, compact }) {
         {r.details && Object.keys(r.details).length > 0 && (
           <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: 12 }}>
             <h4 style={{ fontSize: 12, color: colors.textMuted, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>Detalhamento</h4>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+            <div className="details-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
               {Object.entries(r.details).map(([key, value]) => (
-                <div key={key} style={{ display: "flex", justifyContent: "space-between", padding: "4px 8px", background: colors.surfaceAlt, borderRadius: 4, fontSize: 11 }}>
-                  <span style={{ color: colors.textMuted }}>{key}</span>
-                  <span style={{ fontWeight: 600, fontFamily: "'JetBrains Mono', monospace", color: String(value).includes("✅") ? colors.green : String(value).includes("⚠") ? colors.warning : colors.text }}>{value}</span>
+                <div key={key} style={{ display: "flex", justifyContent: "space-between", padding: "4px 8px", background: colors.surfaceAlt, borderRadius: 4, fontSize: 11, gap: 8 }}>
+                  <span style={{ color: colors.textMuted, flexShrink: 0 }}>{key}</span>
+                  <span style={{ fontWeight: 600, fontFamily: "'JetBrains Mono', monospace", color: String(value).includes("✅") ? colors.green : String(value).includes("⚠") ? colors.warning : colors.text, textAlign: "right" }}>{value}</span>
                 </div>
               ))}
             </div>
@@ -846,39 +846,39 @@ export default function ValuationApp() {
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 
       {/* ─── HEADER ─── */}
-      <header style={{ borderBottom: `1px solid ${colors.border}`, padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", backdropFilter: "blur(20px)", background: colors.bg + "dd", position: "sticky", top: 0, zIndex: 100 }}>
+      <header className="app-header" style={{ borderBottom: `1px solid ${colors.border}`, padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, backdropFilter: "blur(20px)", background: colors.bg + "dd", position: "sticky", top: 0, zIndex: 100 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 8, background: `linear-gradient(135deg, ${colors.accent}, ${colors.blue})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700 }}>V</div>
+          <div style={{ width: 36, height: 36, borderRadius: 8, background: `linear-gradient(135deg, ${colors.accent}, ${colors.blue})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, flexShrink: 0 }}>V</div>
           <div>
             <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>ValuationPro</h1>
-            <p style={{ fontSize: 11, color: colors.textMuted, margin: 0 }}>Framework Multi-Setor</p>
+            <p className="header-subtitle" style={{ fontSize: 11, color: colors.textMuted, margin: 0 }}>Framework Multi-Setor</p>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
+        <div className="header-nav" style={{ display: "flex", gap: 8 }}>
           {["calc", "historico"].map((tab) => (
-            <button key={tab} onClick={() => setActiveTab(tab)} style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${activeTab === tab ? colors.accent : colors.border}`, background: activeTab === tab ? colors.accentDim : "transparent", color: activeTab === tab ? colors.accent : colors.textMuted, fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "all 0.2s" }}>
-              {tab === "calc" ? "Calculadora" : `Histórico (${history.length})`}
+            <button key={tab} onClick={() => setActiveTab(tab)} className="header-btn" style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${activeTab === tab ? colors.accent : colors.border}`, background: activeTab === tab ? colors.accentDim : "transparent", color: activeTab === tab ? colors.accent : colors.textMuted, fontSize: 13, fontWeight: 500, cursor: "pointer", transition: "all 0.2s" }}>
+              {tab === "calc" ? "Calculadora" : `Hist. (${history.length})`}
             </button>
           ))}
-          <button onClick={() => setShowMarginPanel(!showMarginPanel)} style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${showMarginPanel ? colors.warning : colors.border}`, background: showMarginPanel ? colors.warning + "22" : "transparent", color: showMarginPanel ? colors.warning : colors.textMuted, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
+          <button onClick={() => setShowMarginPanel(!showMarginPanel)} className="header-btn" style={{ padding: "6px 14px", borderRadius: 6, border: `1px solid ${showMarginPanel ? colors.warning : colors.border}`, background: showMarginPanel ? colors.warning + "22" : "transparent", color: showMarginPanel ? colors.warning : colors.textMuted, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
             Margens
           </button>
         </div>
       </header>
 
-      <div style={{ maxWidth: 1280, margin: "0 auto", padding: "24px 20px" }}>
+      <div className="main-content" style={{ maxWidth: 1280, margin: "0 auto", padding: "24px 20px" }}>
         {/* ─── MARGIN CONFIG PANEL ─── */}
         {showMarginPanel && (
           <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, padding: 20, marginBottom: 24, animation: "fadeIn 0.3s ease" }}>
             <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 4, color: colors.warning }}>Configuração de Margem de Segurança</h3>
             <p style={{ fontSize: 12, color: colors.textMuted, marginBottom: 16 }}>Ajuste a margem de segurança para cada setor. Valores mais altos = mais conservador.</p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+            <div className="margin-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
               {SECTORS.map((s) => (
                 <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: colors.surfaceAlt, borderRadius: 8, border: `1px solid ${colors.border}` }}>
                   <span style={{ fontSize: 16 }}>{s.icon}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 12, fontWeight: 500, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.label}</div>
-                    <div style={{ fontSize: 10, color: colors.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{MARGIN_RATIONALE[s.id]}</div>
+                    <div className="margin-rationale" style={{ fontSize: 10, color: colors.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{MARGIN_RATIONALE[s.id]}</div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                     <input type="range" min="0" max="50" value={margins[s.id]} onChange={(e) => setMargins((prev) => ({ ...prev, [s.id]: parseInt(e.target.value) }))} style={{ width: 60, accentColor: colors.warning }} />
@@ -894,15 +894,15 @@ export default function ValuationApp() {
         )}
 
         {activeTab === "calc" ? (
-          <div style={{ display: "grid", gridTemplateColumns: result ? "1fr 1fr" : "1fr", gap: 24, alignItems: "start" }}>
+          <div className="calc-grid" style={{ display: "grid", gridTemplateColumns: result ? "1fr 1fr" : "1fr", gap: 24, alignItems: "start" }}>
             {/* ─── LEFT: INPUTS ─── */}
             <div>
               {/* Sector Selector */}
               <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, padding: 20, marginBottom: 20 }}>
                 <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 14, color: colors.textMuted, textTransform: "uppercase", letterSpacing: "0.05em" }}>Selecione o Setor</h3>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 8 }}>
+                <div className="sector-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 8 }}>
                   {SECTORS.map((s) => (
-                    <button key={s.id} onClick={() => handleSectorSelect(s.id)} style={{ padding: "10px 8px", borderRadius: 8, border: `1px solid ${selectedSector === s.id ? colors.accent : colors.border}`, background: selectedSector === s.id ? colors.accentDim : colors.surfaceAlt, color: selectedSector === s.id ? colors.accent : colors.text, fontSize: 12, fontWeight: 500, cursor: "pointer", transition: "all 0.2s", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                    <button key={s.id} onClick={() => handleSectorSelect(s.id)} className="sector-btn" style={{ padding: "10px 8px", borderRadius: 8, border: `1px solid ${selectedSector === s.id ? colors.accent : colors.border}`, background: selectedSector === s.id ? colors.accentDim : colors.surfaceAlt, color: selectedSector === s.id ? colors.accent : colors.text, fontSize: 12, fontWeight: 500, cursor: "pointer", transition: "all 0.2s", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                       <span style={{ fontSize: 20 }}>{s.icon}</span>
                       <span>{s.label}</span>
                       <span style={{ fontSize: 10, color: colors.textDim, textTransform: "uppercase" }}>{s.type}</span>
@@ -938,7 +938,7 @@ export default function ValuationApp() {
                     </div>
                   )}
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div className="input-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                     {SECTOR_FIELDS[selectedSector]?.map((field) => (
                       <div key={field.key} style={{ gridColumn: field.key === "ticker" ? "1 / -1" : undefined }}>
                         <label style={{ fontSize: 11, fontWeight: 500, color: colors.textMuted, display: "block", marginBottom: 4 }}>
@@ -1083,9 +1083,9 @@ export default function ValuationApp() {
             ) : (
               <>
                 {/* Header */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                <div className="history-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 8 }}>
                   <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>
-                    {`Histórico de Valuations (${history.length} ativo${history.length !== 1 ? "s" : ""})`}
+                    {`Histórico (${history.length} ativo${history.length !== 1 ? "s" : ""})`}
                   </h3>
                   <button onClick={handleClearAllHistory} style={{ padding: "6px 12px", borderRadius: 6, border: `1px solid ${colors.red}44`, background: colors.dangerDim, color: colors.red, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
                     Limpar tudo
@@ -1094,9 +1094,9 @@ export default function ValuationApp() {
 
                 {/* History Comparison Chart */}
                 {historyChartData.length > 1 && (
-                  <div style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, padding: 20, marginBottom: 20 }}>
+                  <div className="history-chart-card" style={{ background: colors.surface, border: `1px solid ${colors.border}`, borderRadius: 12, padding: 20, marginBottom: 20 }}>
                     <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16 }}>Comparativo de Ativos</h3>
-                    <div style={{ height: 300 }}>
+                    <div className="history-chart" style={{ height: 300 }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={historyChartData} barCategoryGap="20%">
                           <CartesianGrid strokeDasharray="3 3" stroke={colors.border} />
@@ -1152,6 +1152,83 @@ export default function ValuationApp() {
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: ${colors.bg}; }
         ::-webkit-scrollbar-thumb { background: ${colors.borderLight}; border-radius: 3px; }
+
+        /* ─── MOBILE RESPONSIVE (iPhone 14 = 390px) ─── */
+        @media (max-width: 600px) {
+          .app-header {
+            padding: 12px 14px !important;
+            gap: 8px !important;
+          }
+          .header-nav {
+            gap: 6px !important;
+            width: 100%;
+            justify-content: stretch;
+          }
+          .header-btn {
+            padding: 8px 10px !important;
+            font-size: 12px !important;
+            flex: 1;
+            text-align: center;
+          }
+          .header-subtitle {
+            display: none;
+          }
+          .main-content {
+            padding: 14px 10px !important;
+          }
+          .calc-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .sector-grid {
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 6px !important;
+          }
+          .sector-btn {
+            padding: 8px 4px !important;
+            font-size: 11px !important;
+          }
+          .input-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .margin-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .margin-rationale {
+            display: none;
+          }
+          .result-card {
+            padding: 14px !important;
+          }
+          .price-cards {
+            grid-template-columns: 1fr !important;
+            gap: 8px !important;
+          }
+          .price-value {
+            font-size: 18px !important;
+          }
+          .details-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .history-chart {
+            height: 220px !important;
+          }
+          .history-chart-card {
+            padding: 14px !important;
+          }
+        }
+
+        /* ─── SMALL TABLETS (601-768px) ─── */
+        @media (min-width: 601px) and (max-width: 768px) {
+          .calc-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .price-cards {
+            grid-template-columns: 1fr 1fr 1fr !important;
+          }
+          .main-content {
+            padding: 20px 16px !important;
+          }
+        }
       `}</style>
     </div>
   );
