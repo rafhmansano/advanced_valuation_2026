@@ -205,11 +205,34 @@ const SECTOR_FIELDS = {
   ],
 };
 
+// ─── LOCALE-AWARE NUMBER PARSER ───
+function parseLocaleNumber(val) {
+  if (val === "" || val === undefined || val === null) return 0;
+  let str = String(val).trim();
+  if (str.includes(',') && str.includes('.')) {
+    if (str.lastIndexOf(',') > str.lastIndexOf('.')) {
+      // pt-BR: "1.300,50" → dots are thousands, comma is decimal
+      str = str.replace(/\./g, '').replace(',', '.');
+    } else {
+      // en-US: "1,300.50" → commas are thousands, dot is decimal
+      str = str.replace(/,/g, '');
+    }
+  } else if (str.includes(',')) {
+    // "1,300" → thousands (3 digits after comma) vs "1,5" → decimal
+    if (/,\d{3}$/.test(str)) {
+      str = str.replace(/,/g, '');
+    } else {
+      str = str.replace(',', '.');
+    }
+  }
+  return parseFloat(str) || 0;
+}
+
 // ─── VALUATION ENGINES ───
 function calculateValuation(sector, inputs) {
   const p = {};
   Object.keys(inputs).forEach((k) => {
-    p[k] = inputs[k] === "" || inputs[k] === undefined ? 0 : parseFloat(inputs[k]) || 0;
+    p[k] = inputs[k] === "" || inputs[k] === undefined ? 0 : parseLocaleNumber(inputs[k]);
   });
 
   let fairPrice = 0;
