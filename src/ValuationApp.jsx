@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from "recharts";
 import * as XLSX from "xlsx";
 import { extractPdfText, extractFieldsFromText } from "./pdfParser.js";
+import { supabase } from "./supabaseClient.js";
 
 // ─── SECTOR DEFINITIONS ───
 const SECTORS = [
@@ -657,6 +658,40 @@ export default function ValuationApp() {
   const [activeTab, setActiveTab] = useState("calc");
   const [showMethodology, setShowMethodology] = useState(false);
   const [expandedHistoryIdx, setExpandedHistoryIdx] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(true);
+
+  // Load history from Supabase on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("valuation_history")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(20);
+        if (error) throw error;
+        setHistory(data.map((row) => ({
+          id: row.id,
+          ticker: row.ticker,
+          sector: row.sector,
+          sectorLabel: row.sector_label,
+          currentPrice: Number(row.current_price),
+          fairPrice: Number(row.fair_price),
+          fairWithMargin: Number(row.fair_with_margin),
+          margin: Number(row.margin),
+          upside: Number(row.upside),
+          upsideWithMargin: Number(row.upside_with_margin),
+          verdict: row.verdict,
+          details: row.details || {},
+          timestamp: row.timestamp,
+        })));
+      } catch (err) {
+        console.error("Supabase load error:", err);
+      } finally {
+        setHistoryLoading(false);
+      }
+    })();
+  }, []);
 
   const sectorInfo = SECTORS.find((s) => s.id === selectedSector);
   const methodology = selectedSector ? SECTOR_METHODOLOGY[selectedSector] : null;
@@ -744,7 +779,33 @@ export default function ValuationApp() {
       timestamp: new Date().toLocaleString("pt-BR"),
     };
     setResult(newResult);
-    setHistory((prev) => [newResult, ...prev.filter((h) => h.ticker !== newResult.ticker)].slice(0, 20));
+    // Persist to Supabase, then update local state with returned id
+    (async () => {
+      try {
+        await supabase.from("valuation_history").delete().eq("ticker", newResult.ticker);
+        const { data, error } = await supabase.from("valuation_history").insert({
+          ticker: newResult.ticker,
+          sector: newResult.sector,
+          sector_label: newResult.sectorLabel,
+          current_price: newResult.currentPrice,
+          fair_price: newResult.fairPrice,
+          fair_with_margin: newResult.fairWithMargin,
+          margin: newResult.margin,
+          upside: newResult.upside,
+          upside_with_margin: newResult.upsideWithMargin,
+          verdict: newResult.verdict,
+          details: newResult.details,
+          timestamp: newResult.timestamp,
+        }).select().single();
+        if (error) throw error;
+        const withId = { ...newResult, id: data.id };
+        setHistory((prev) => [withId, ...prev.filter((h) => h.ticker !== newResult.ticker)].slice(0, 20));
+      } catch (err) {
+        console.error("Supabase save error:", err);
+        // Fallback to local-only
+        setHistory((prev) => [newResult, ...prev.filter((h) => h.ticker !== newResult.ticker)].slice(0, 20));
+      }
+    })();
   };
 
   const historyChartData = useMemo(() => {
@@ -756,10 +817,27 @@ export default function ValuationApp() {
     }));
   }, [history]);
 
-  const handleDeleteHistory = (idx) => {
+  const handleDeleteHistory = async (idx) => {
+    const item = history[idx];
     setHistory((prev) => prev.filter((_, i) => i !== idx));
     if (expandedHistoryIdx === idx) setExpandedHistoryIdx(null);
     else if (expandedHistoryIdx > idx) setExpandedHistoryIdx(expandedHistoryIdx - 1);
+    if (item?.id) {
+      try {
+        await supabase.from("valuation_history").delete().eq("id", item.id);
+      } catch (err) {
+        console.error("Supabase delete error:", err);
+      }
+    }
+  };
+
+  const handleClearAllHistory = async () => {
+    setHistory([]);
+    try {
+      await supabase.from("valuation_history").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+    } catch (err) {
+      console.error("Supabase clear error:", err);
+    }
   };
 
   return (
@@ -991,7 +1069,12 @@ export default function ValuationApp() {
         ) : (
           /* ─── HISTORY TAB ─── */
           <div>
-            {history.length === 0 ? (
+            {historyLoading ? (
+              <div style={{ textAlign: "center", padding: 60, color: colors.textMuted }}>
+                <div style={{ fontSize: 24, marginBottom: 12 }}>⏳</div>
+                <p style={{ fontSize: 14 }}>Carregando histórico...</p>
+              </div>
+            ) : history.length === 0 ? (
               <div style={{ textAlign: "center", padding: 60, color: colors.textMuted }}>
                 <div style={{ fontSize: 48, marginBottom: 12 }}>📊</div>
                 <p style={{ fontSize: 14 }}>Nenhum cálculo realizado ainda.</p>
@@ -1004,7 +1087,7 @@ export default function ValuationApp() {
                   <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>
                     {`Histórico de Valuations (${history.length} ativo${history.length !== 1 ? "s" : ""})`}
                   </h3>
-                  <button onClick={() => setHistory([])} style={{ padding: "6px 12px", borderRadius: 6, border: `1px solid ${colors.red}44`, background: colors.dangerDim, color: colors.red, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
+                  <button onClick={handleClearAllHistory} style={{ padding: "6px 12px", borderRadius: 6, border: `1px solid ${colors.red}44`, background: colors.dangerDim, color: colors.red, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>
                     Limpar tudo
                   </button>
                 </div>
